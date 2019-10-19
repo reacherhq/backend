@@ -5,7 +5,7 @@ import { User } from '../models';
 import { chain, checkJwt, connectToDatabase, WithJwt } from '../util';
 
 /**
- * Fetch a user
+ * Fetch or create a user
  */
 async function user(
   req: NowRequest & WithJwt,

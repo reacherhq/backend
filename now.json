@@ -1,8 +1,10 @@
 {
   "name": "@reacher/microservices",
   "version": 2,
+  "alias": ["reacher.now.sh"],
   "env": {
-    "MONGODB_ATLAS_URI": "@mongodb-atlas-uri"
+    "MONGODB_ATLAS_URI": "@reacher-mongodb-atlas-uri",
+    "SERVERLESS_VERIFIER_ENDPOINT": "@reacher-serverless-verifier-endpoint"
   },
   "routes": [
     {
@@ -11,6 +13,7 @@
     },
     {
       "src": "/api/verify/demo",
+      "dest": "/api/verify/demo.ts",
       "methods": ["GET"]
     }
   ]
