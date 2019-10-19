@@ -1,3 +1,4 @@
+import { NowRequest, NowResponse } from '@now/node';
 import { RequestHandler } from 'express';
 
 type AsyncVoid = void | Promise<void>;
@@ -33,7 +34,7 @@ function combineMiddleware(middlewares: RequestHandler[]): RequestHandler {
  * @param middlewares - Functions of form: `function(req, res, next) { ... }`, aka
  * express middlewares.
  */
-export function chain<Req, Res>(
+export function chain<Req = NowRequest, Res = NowResponse>(
   ...middlewares: RequestHandler[]
 ): (fn: NowFunction<Req, Res>) => NowFunction<Req, Res> {
   return function(fn: NowFunction<Req, Res>): NowFunction<Req, Res> {

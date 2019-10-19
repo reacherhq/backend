@@ -3,5 +3,15 @@
   "version": 2,
   "env": {
     "MONGODB_ATLAS_URI": "@mongodb-atlas-uri"
-  }
+  },
+  "routes": [
+    {
+      "src": "/api/user",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/verify/demo",
+      "methods": ["GET"]
+    }
+  ]
 }
