@@ -1,0 +1,7 @@
+{
+  "name": "@reacher/microservices",
+  "version": 2,
+  "env": {
+    "MONGODB_ATLAS_URI": "@mongodb-atlas-uri"
+  }
+}

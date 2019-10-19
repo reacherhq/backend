@@ -1,0 +1,22 @@
+{
+  "name": "@reacher/microservices",
+  "version": "0.1.0",
+  "author": "Amaury Martiny <amaury.martiny@protonmail.com>",
+  "license": "GPL-3.0",
+  "main": "lib/index.js",
+  "repository": "https://github.com/amaurymartiny/reacher-microservices",
+  "private": true,
+  "dependencies": {
+    "@now/node": "^1.0.1",
+    "@types/jsonwebtoken": "^8.3.5",
+    "@types/micro-cors": "^0.1.0",
+    "@types/mongodb": "^3.3.6",
+    "jsonwebtoken": "^8.5.1",
+    "jwks-rsa": "^1.6.0",
+    "micro-cors": "^0.1.1",
+    "mongodb": "^3.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^3.6.4"
+  }
+}
