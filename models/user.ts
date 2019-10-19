@@ -2,6 +2,6 @@ import { Verification } from './verification';
 
 export interface User {
   auth0Id: string;
-  tokens: number;
+  credits: number;
   verifications: Verification[];
 }

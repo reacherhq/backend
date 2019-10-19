@@ -9,7 +9,8 @@
   "routes": [
     {
       "src": "/api/user",
-      "methods": ["GET", "OPTIONS"]
+      "methods": ["GET", "OPTIONS"],
+      "dest": "/api/user.ts"
     },
     {
       "src": "/api/verify/demo",

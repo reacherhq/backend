@@ -22,10 +22,17 @@ async function user(
   const Users = db.collection<User>('User');
 
   // Select the users collection from the database
-  const users = await Users.find({}).toArray();
+  const currentUser = await Users.findOneAndUpdate(
+    {
+      auth0Id: req.auth0.sub
+    },
+    // Create a new document is none exists
+    { $set: { auth0Id: req.auth0.sub, credits: 100, verifications: [] } },
+    { upsert: true }
+  );
 
-  // Respond with a JSON string of all users in the collection
-  res.status(200).json({ users });
+  // Respond with a JSON of current user
+  res.status(200).json(currentUser.value);
 }
 
 export default chain<NowRequest & WithJwt, NowResponse>(cors(), checkJwt)(user);
