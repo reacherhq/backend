@@ -1,22 +1,16 @@
 import { NowRequest, NowResponse } from '@now/node';
-import cors from 'micro-cors';
+import cors from 'cors';
 
 import { User } from '../models';
-import { connectToDatabase, jwt } from '../util';
+import { chain, checkJwt, connectToDatabase, WithJwt } from '../util';
 
 /**
  * Fetch a user
  */
-async function user(req: NowRequest, res: NowResponse): Promise<void> {
-  if (req.method !== 'GET') {
-    res.status(200).send('ok');
-    return;
-  }
-
-  const decoded = await jwt(req, res);
-
-  console.log('AAA', decoded);
-
+async function user(
+  req: NowRequest & WithJwt,
+  res: NowResponse
+): Promise<void> {
   if (!process.env.MONGODB_ATLAS_URI) {
     throw new Error('MONGODB_ATLAS_URI is not defined');
   }
@@ -34,4 +28,4 @@ async function user(req: NowRequest, res: NowResponse): Promise<void> {
   res.status(200).json({ users });
 }
 
-export default cors()(user);
+export default chain<NowRequest & WithJwt, NowResponse>(cors(), checkJwt)(user);

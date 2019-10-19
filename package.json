@@ -11,12 +11,11 @@
   },
   "dependencies": {
     "@now/node": "^1.0.1",
-    "@types/jsonwebtoken": "^8.3.5",
-    "@types/micro-cors": "^0.1.0",
+    "@types/cors": "^2.8.6",
     "@types/mongodb": "^3.3.6",
-    "jsonwebtoken": "^8.5.1",
+    "cors": "^2.8.5",
+    "express-jwt": "^5.3.1",
     "jwks-rsa": "^1.6.0",
-    "micro-cors": "^0.1.1",
     "mongodb": "^3.3.3"
   },
   "devDependencies": {
