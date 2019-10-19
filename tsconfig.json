@@ -1,6 +1,6 @@
 {
+  "extends": "./node_modules/@amaurymartiny/tsconfig/tsconfig.json",
   "compilerOptions": {
-    "esModuleInterop": true,
-    "strict": true
+    "esModuleInterop": true
   }
 }

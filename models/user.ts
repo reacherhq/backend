@@ -1,7 +1,7 @@
-import { IVerification } from './verification';
+import { Verification } from './verification';
 
-export interface IUser {
+export interface User {
   auth0Id: string;
   tokens: number;
-  verifications: IVerification[];
+  verifications: Verification[];
 }

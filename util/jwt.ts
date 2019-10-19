@@ -1,6 +1,5 @@
 import { NowRequest, NowResponse } from '@now/node';
 import { verify, VerifyErrors } from 'jsonwebtoken';
-// @ts-ignore esModuleInterop error, but not justified
 import jwksClient, {
   JwksClient,
   CertSigningKey,
@@ -29,7 +28,7 @@ const client: JwksClient = jwksClient({
 function getKey(
   header: { kid?: string },
   callback: (err: Error | null, result: string | undefined) => void
-) {
+): void {
   console.log('header.kid', header.kid);
   if (!header.kid) {
     callback(new Error('No `kid` field in header'), undefined);
@@ -52,7 +51,10 @@ function getKey(
   });
 }
 
-export async function jwt(req: NowRequest, res: NowResponse) {
+export async function jwt(
+  req: NowRequest,
+  res: NowResponse
+): Promise<string | object> {
   try {
     const bearerToken = req.headers.authorization;
 

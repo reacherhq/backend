@@ -1,4 +1,4 @@
-export interface IVerification {
+export interface Verification {
   id: string;
 
   summary: {

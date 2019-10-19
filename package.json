@@ -6,6 +6,9 @@
   "main": "lib/index.js",
   "repository": "https://github.com/amaurymartiny/reacher-microservices",
   "private": true,
+  "scripts": {
+    "lint": "tsc --noEmit && eslint . --ext js,ts"
+  },
   "dependencies": {
     "@now/node": "^1.0.1",
     "@types/jsonwebtoken": "^8.3.5",
@@ -17,6 +20,7 @@
     "mongodb": "^3.3.3"
   },
   "devDependencies": {
+    "@amaurymartiny/config": "^1.0.2",
     "typescript": "^3.6.4"
   }
 }

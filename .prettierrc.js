@@ -1,4 +1,1 @@
-module.exports = {
-  semi: true,
-  singleQuote: true
-};
+module.exports = require('@amaurymartiny/eslintrc/prettierrc');

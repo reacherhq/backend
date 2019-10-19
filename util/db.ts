@@ -9,7 +9,7 @@ let cachedDb: Db | null = null;
  * connection string
  * @param uri - MongoDB connection string
  */
-export async function connectToDatabase(uri: string) {
+export async function connectToDatabase(uri: string): Promise<Db> {
   // If the database connection is cached,
   // use it instead of creating a new connection
   if (cachedDb) {

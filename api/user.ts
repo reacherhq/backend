@@ -1,13 +1,13 @@
 import { NowRequest, NowResponse } from '@now/node';
 import cors from 'micro-cors';
 
-import { IUser } from '../models';
+import { User } from '../models';
 import { connectToDatabase, jwt } from '../util';
 
 /**
  * Fetch a user
  */
-async function user(req: NowRequest, res: NowResponse) {
+async function user(req: NowRequest, res: NowResponse): Promise<void> {
   if (req.method !== 'GET') {
     res.status(200).send('ok');
     return;
@@ -25,10 +25,10 @@ async function user(req: NowRequest, res: NowResponse) {
   // using the connection string environment variable as the argument
   const db = await connectToDatabase(process.env.MONGODB_ATLAS_URI);
 
-  const User = db.collection<IUser>('User');
+  const Users = db.collection<User>('User');
 
   // Select the users collection from the database
-  const users = await User.find({}).toArray();
+  const users = await Users.find({}).toArray();
 
   // Respond with a JSON string of all users in the collection
   res.status(200).json({ users });
