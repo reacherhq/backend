@@ -2,6 +2,7 @@
   "name": "@reacher/microservices",
   "version": 2,
   "alias": ["reacher.now.sh"],
+  "builds": [{ "src": "api/**/*.ts", "use": "@now/node" }],
   "env": {
     "MONGODB_ATLAS_URI": "@reacher-mongodb-atlas-uri",
     "SERVERLESS_VERIFIER_ENDPOINT": "@reacher-serverless-verifier-endpoint"
@@ -11,6 +12,11 @@
       "src": "/api/user",
       "methods": ["GET", "OPTIONS"],
       "dest": "/api/user.ts"
+    },
+    {
+      "src": "/api/verify/bulk",
+      "dest": "/api/verify/bulk.ts",
+      "methods": ["OPTIONS", "POST"]
     },
     {
       "src": "/api/verify/demo",

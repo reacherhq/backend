@@ -1,5 +1,5 @@
 export interface Verification {
-  id: string;
+  name: string;
 
   summary: {
     deliverable: number;

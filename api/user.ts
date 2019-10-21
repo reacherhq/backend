@@ -1,8 +1,7 @@
 import { NowRequest, NowResponse } from '@now/node';
-import cors from 'cors';
 
 import { User } from '../models';
-import { chain, checkJwt, connectToDatabase, WithJwt } from '../util';
+import { chain, checkJwt, cors, connectToDatabase, WithJwt } from '../util';
 
 /**
  * Fetch or create a user
@@ -35,4 +34,4 @@ async function user(
   res.status(200).json(currentUser.value);
 }
 
-export default chain<NowRequest & WithJwt, NowResponse>(cors(), checkJwt)(user);
+export default chain<NowRequest & WithJwt>(cors, checkJwt)(user);
