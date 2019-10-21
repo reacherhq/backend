@@ -1,0 +1,12 @@
+[package]
+name = "exists"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+check-if-email-exists = "0.4"
+http = "0.1"
+now_lambda = "0.1"
+serde = "1.0"
+serde_json = "1.0"
+url = "1.7"
