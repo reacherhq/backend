@@ -1,0 +1,21 @@
+{
+  "name": "@reacher/microservices",
+  "version": "0.1.0",
+  "author": "Amaury Martiny <amaury.martiny@protonmail.com>",
+  "license": "GPL-3.0",
+  "main": "lib/index.js",
+  "repository": "https://github.com/amaurymartiny/reacher-microservices",
+  "private": true,
+  "scripts": {
+    "lint": "tsc --noEmit && eslint . --ext js,ts",
+    "start": "now dev"
+  },
+  "workspaces": [
+    "nodejs"
+  ],
+  "devDependencies": {
+    "@amaurymartiny/config": "^1.0.2",
+    "serverless": "^1.58.0",
+    "typescript": "^3.6.4"
+  }
+}
