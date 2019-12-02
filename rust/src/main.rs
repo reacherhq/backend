@@ -19,6 +19,7 @@ extern crate lambda_runtime;
 extern crate serde_json;
 
 use check_if_email_exists::email_exists;
+use futures::executor::block_on;
 use lambda_http::{lambda, IntoResponse, Request, RequestExt};
 use lambda_runtime::{error::HandlerError, Context};
 use serde_json::json;
@@ -35,7 +36,7 @@ fn handler(request: Request, _: Context) -> Result<impl IntoResponse, HandlerErr
 			.get("from_email")
 			.unwrap_or(&Cow::Borrowed("user@example.org"));
 
-		let response = email_exists(&to_email, &from_email);
+		let response = block_on(email_exists(&to_email, &from_email));
 
 		Ok(json!(response))
 	} else {
