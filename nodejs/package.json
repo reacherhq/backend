@@ -10,12 +10,22 @@
     "lint": "tsc --noEmit && eslint . --ext js,ts",
     "start": "now dev"
   },
-  "workspaces": [
-    "nodejs"
-  ],
+  "dependencies": {
+    "@now/node": "^1.0.1",
+    "@types/cors": "^2.8.6",
+    "@types/express-rate-limit": "^3.3.3",
+    "@types/mongodb": "^3.3.6",
+    "@types/node-fetch": "^2.5.2",
+    "cors": "^2.8.5",
+    "express-jwt": "^5.3.1",
+    "express-rate-limit": "^5.0.0",
+    "jwks-rsa": "^1.6.0",
+    "mongodb": "^3.3.3",
+    "node-fetch": "^2.6.0"
+  },
   "devDependencies": {
     "@amaurymartiny/config": "^1.0.2",
-    "serverless": "^1.58.0",
+    "now": "^16.3.1",
     "typescript": "^3.6.4"
   }
 }
