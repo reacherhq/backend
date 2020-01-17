@@ -14,19 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
+extern crate http;
 extern crate lambda_http;
 extern crate lambda_runtime;
 extern crate serde_json;
 
 use check_if_email_exists::email_exists;
 use futures::executor::block_on;
-use lambda_http::{lambda, IntoResponse, Request, RequestExt};
+use http::header::{ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE, ORIGIN};
+use lambda_http::{lambda, IntoResponse, Request, RequestExt, Response};
 use lambda_runtime::{error::HandlerError, Context};
-use serde_json::json;
+use serde::Serialize;
 use std::borrow::Cow;
 
 fn main() {
 	lambda!(handler)
+}
+
+#[derive(Serialize)]
+struct ErrorOutput {
+	error: String,
 }
 
 fn handler(request: Request, _: Context) -> Result<impl IntoResponse, HandlerError> {
@@ -37,9 +44,28 @@ fn handler(request: Request, _: Context) -> Result<impl IntoResponse, HandlerErr
 			.unwrap_or(&Cow::Borrowed("user@example.org"));
 
 		let response = block_on(email_exists(&to_email, &from_email));
+		let serialized = serde_json::to_string(&response).expect("response is a valid json. qed.");
 
-		Ok(json!(response))
+		Ok(
+			Response::builder()
+				.status(200)
+				.header(CONTENT_TYPE, "application/json")
+				.header(ACCESS_CONTROL_ALLOW_ORIGIN, &request.headers()[ORIGIN])
+				.body(serialized)
+				.expect("`serialized` is serializable. qed."),
+		)
 	} else {
-		Ok(json!({ "error": "`to_email` is a required query param" }))
+		let serialized = serde_json::to_string(&ErrorOutput {
+			error: "`to_email` is a required query param".into(),
+		})
+		.expect("ErrorOutput is serializable. qed.");
+
+		Ok(
+			Response::builder()
+				.status(422)
+				.header(CONTENT_TYPE, "application/json")
+				.body(serialized)
+				.expect("Failed to render response."),
+		)
 	}
 }

@@ -40,6 +40,10 @@ functions:
       - http:
           path: /
           method: GET
+          cors:
+            origins:
+              - http://localhost:8000
+              - https://reacherhq.github.io
     # handler value syntax is `{cargo-package-name}.{bin-name}`
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.

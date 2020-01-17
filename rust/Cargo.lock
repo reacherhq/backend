@@ -103,6 +103,7 @@ version = "0.4.0"
 dependencies = [
  "check-if-email-exists 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "http 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "lambda_http 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lambda_runtime 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.103 (registry+https://github.com/rust-lang/crates.io-index)",
