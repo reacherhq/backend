@@ -52,35 +52,29 @@ fn handler(request: Request, _: Context) -> Result<impl IntoResponse, HandlerErr
 				error: "Missing `Origin` header".into(),
 			};
 
-			return Ok(
-				Response::builder()
-					.status(400)
-					.header(CONTENT_TYPE, "application/json")
-					.body(serde_json::to_string(&error).expect("`error` is serializable. qed."))
-					.expect("`error` is serializable. qed."),
-			);
+			return Ok(Response::builder()
+				.status(400)
+				.header(CONTENT_TYPE, "application/json")
+				.body(serde_json::to_string(&error).expect("`error` is serializable. qed."))
+				.expect("`error` is serializable. qed."));
 		}
 
-		Ok(
-			Response::builder()
-				.status(200)
-				.header(CONTENT_TYPE, "application/json")
-				.header(ACCESS_CONTROL_ALLOW_ORIGIN, &request.headers()[ORIGIN])
-				.body(serialized)
-				.expect("`serialized` is serializable. qed."),
-		)
+		Ok(Response::builder()
+			.status(200)
+			.header(CONTENT_TYPE, "application/json")
+			.header(ACCESS_CONTROL_ALLOW_ORIGIN, &request.headers()[ORIGIN])
+			.body(serialized)
+			.expect("`serialized` is serializable. qed."))
 	} else {
 		let serialized = serde_json::to_string(&ErrorOutput {
 			error: "`to_email` is a required query param".into(),
 		})
 		.expect("ErrorOutput is serializable. qed.");
 
-		Ok(
-			Response::builder()
-				.status(422)
-				.header(CONTENT_TYPE, "application/json")
-				.body(serialized)
-				.expect("Failed to render response."),
-		)
+		Ok(Response::builder()
+			.status(422)
+			.header(CONTENT_TYPE, "application/json")
+			.body(serialized)
+			.expect("Failed to render response."))
 	}
 }
