@@ -7,7 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: serverless deploy
+      - run: yarn install
+      - name: Test serverless invoke locally
         uses: serverless/github-action@master
         with:
           args: invoke local -f check-if-email-exists-serverless -d \"$(cat test/payload.json)\"
