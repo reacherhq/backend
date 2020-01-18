@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@amaurymartiny/config": "^1.0.2",
-    "now": "^16.3.1",
+    "now": "^16.7.3",
     "typescript": "^3.6.4"
   }
 }
