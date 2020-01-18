@@ -24,7 +24,7 @@
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
-    "@amaurymartiny/config": "^1.0.2",
+    "@amaurymartiny/config": "^1.0.11",
     "now": "^16.3.1",
     "typescript": "^3.6.4"
   }

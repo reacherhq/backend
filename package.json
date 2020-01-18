@@ -14,7 +14,7 @@
     "nodejs"
   ],
   "devDependencies": {
-    "@amaurymartiny/config": "^1.0.2",
+    "@amaurymartiny/config": "^1.0.11",
     "serverless": "^1.58.0",
     "typescript": "^3.6.4"
   }
