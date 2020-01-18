@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/reacherhq/microservices/workflows/CI/badge.svg)](https://github.com/reacherhq/microservices/actions)
+[![Actions Status](https://github.com/reacherhq/microservices/workflows/pr/badge.svg)](https://github.com/reacherhq/microservices/actions)
 ![GitHub](https://img.shields.io/github/license/reacherhq/microservices.svg)
 
 # Reacher Microservices
