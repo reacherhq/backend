@@ -1,6 +1,9 @@
+[![Actions Status](https://github.com/reacherhq/microservices/workflows/CI/badge.svg)](https://github.com/reacherhq/microservices/actions)
+![GitHub](https://img.shields.io/github/license/reacherhq/microservices.svg)
+
 # Serverless
 
-This package deploys the [`check-if-email-exists`](https://github.com/amaurymartiny/check-if-email-exists) function as a lambda function on AWS via [serverless](https://serverless.com/).
+This package deploys the [`check-if-email-exists`](https://github.com/reacherhq/check-if-email-exists) function as a lambda function on AWS via [serverless](https://serverless.com/).
 
 To try it out, follow the steps below:
 
