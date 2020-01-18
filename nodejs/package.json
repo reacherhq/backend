@@ -11,7 +11,7 @@
     "start": "now dev"
   },
   "dependencies": {
-    "@now/node": "^1.0.1",
+    "@now/node": "^1.3.5",
     "@types/cors": "^2.8.6",
     "@types/express-rate-limit": "^3.3.3",
     "@types/mongodb": "^3.3.6",
