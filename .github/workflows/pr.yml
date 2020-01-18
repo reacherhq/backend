@@ -1,0 +1,14 @@
+name: pr
+
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run serverless invoke locally
+        uses: actions-hub/docker@master
+        run: |
+          yarn install
+          yarn test
