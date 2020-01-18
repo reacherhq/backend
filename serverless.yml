@@ -42,8 +42,8 @@ functions:
           method: GET
           cors:
             origins:
-              - http://localhost:8000
-              - https://reacherhq.github.io
+              - http://localhost:8000 # For dev
+              - https://reacherhq.github.io # For the prod version
     # handler value syntax is `{cargo-package-name}.{bin-name}`
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.
