@@ -4,7 +4,6 @@ on: [pull_request]
 
 jobs:
   check:
-    name: Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -23,7 +22,6 @@ jobs:
           command: check
 
   lint:
-    name: Lints
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
