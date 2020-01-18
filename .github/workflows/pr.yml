@@ -10,4 +10,4 @@ jobs:
       - name: Run serverless invoke locally
         run: |
           yarn install
-          yarn test
+          yarn test:ci
