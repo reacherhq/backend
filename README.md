@@ -1,6 +1,6 @@
 # Serverless
 
-This package deploys the `check_if_email_exists` function as a lambda function on AWS via [serverless](https://serverless.com/).
+This package deploys the [`check-if-email-exists`](https://github.com/amaurymartiny/check-if-email-exists) function as a lambda function on AWS via [serverless](https://serverless.com/).
 
 To try it out, follow the steps below:
 
