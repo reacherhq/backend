@@ -14,7 +14,7 @@
     "@now/node": "^1.0.1",
     "@types/cors": "^2.8.6",
     "@types/express-rate-limit": "^3.3.3",
-    "@types/mongodb": "^3.3.6",
+    "@types/mongodb": "^3.3.14",
     "@types/node-fetch": "^2.5.2",
     "cors": "^2.8.5",
     "express-jwt": "^5.3.1",
