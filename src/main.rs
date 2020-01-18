@@ -1,5 +1,5 @@
 // Reacher
-// Copyright (C) 2018-2019 Amaury Martiny
+// Copyright (C) 2018-2020 Amaury Martiny
 
 // Reacher is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,28 +44,37 @@ fn handler(request: Request, _: Context) -> Result<impl IntoResponse, HandlerErr
 			.unwrap_or(&Cow::Borrowed("user@example.org"));
 
 		let response = block_on(email_exists(&to_email, &from_email));
-		let serialized = serde_json::to_string(&response).expect("response is a valid json. qed.");
+		let serialized = serde_json::to_string(&response).expect("response is serializable. qed.");
 
-		Ok(
-			Response::builder()
-				.status(200)
+		// In case the request header doesn't have ORIGIN, we send back an error
+		if !request.headers().contains_key(ORIGIN) {
+			let error = ErrorOutput {
+				error: "Missing `Origin` header".into(),
+			};
+
+			return Ok(Response::builder()
+				.status(400)
 				.header(CONTENT_TYPE, "application/json")
-				.header(ACCESS_CONTROL_ALLOW_ORIGIN, &request.headers()[ORIGIN])
-				.body(serialized)
-				.expect("`serialized` is serializable. qed."),
-		)
+				.body(serde_json::to_string(&error).expect("`error` is serializable. qed."))
+				.expect("`error` is serializable. qed."));
+		}
+
+		Ok(Response::builder()
+			.status(200)
+			.header(CONTENT_TYPE, "application/json")
+			.header(ACCESS_CONTROL_ALLOW_ORIGIN, &request.headers()[ORIGIN])
+			.body(serialized)
+			.expect("`serialized` is serializable. qed."))
 	} else {
 		let serialized = serde_json::to_string(&ErrorOutput {
 			error: "`to_email` is a required query param".into(),
 		})
 		.expect("ErrorOutput is serializable. qed.");
 
-		Ok(
-			Response::builder()
-				.status(422)
-				.header(CONTENT_TYPE, "application/json")
-				.body(serialized)
-				.expect("Failed to render response."),
-		)
+		Ok(Response::builder()
+			.status(422)
+			.header(CONTENT_TYPE, "application/json")
+			.body(serialized)
+			.expect("Failed to render response."))
 	}
 }

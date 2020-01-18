@@ -1,21 +1,17 @@
 {
-  "name": "@reacher/microservices",
+  "name": "@reacher/ciee",
   "version": "0.1.0",
   "author": "Amaury Martiny <amaury.martiny@protonmail.com>",
   "license": "GPL-3.0",
-  "main": "lib/index.js",
-  "repository": "https://github.com/amaurymartiny/reacher-microservices",
+  "repository": "https://github.com/reacherhq/microservices",
   "private": true,
   "scripts": {
-    "lint": "tsc --noEmit && eslint . --ext js,ts",
-    "start": "now dev"
+    "deploy": "serverless deploy",
+    "test": "serverless invoke local -f check-if-email-exists-serverless -d \"$(cat test/payload.json)\"",
+    "test:ci": "yarn test | grep is_deliverable"
   },
-  "workspaces": [
-    "nodejs"
-  ],
   "devDependencies": {
-    "@amaurymartiny/config": "^1.0.2",
-    "serverless": "^1.58.0",
-    "typescript": "^3.6.4"
+    "serverless": "^1.61.2",
+    "serverless-rust": "^0.3.7"
   }
 }
