@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "deploy": "serverless deploy",
-    "test": "serverless invoke local -f check-if-email-exists-serverless -d \"$(cat test/payload.json)\" | grep is_deliverable"
+    "test": "serverless invoke local -f check-if-email-exists-serverless -d \"$(cat test/payload.json)\""
   },
   "devDependencies": {
     "serverless": "^1.61.2",
