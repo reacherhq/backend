@@ -11,7 +11,7 @@
     "test:ci": "yarn test | grep is_deliverable"
   },
   "devDependencies": {
-    "serverless": "^1.61.2",
+    "serverless": "^1.61.3",
     "serverless-rust": "^0.3.7"
   }
 }
