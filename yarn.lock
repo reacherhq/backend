@@ -2799,10 +2799,10 @@ serverless-rust@^0.3.7:
     fs-extra "^8.1.0"
     serverless "^1.57.0"
 
-serverless@^1.57.0, serverless@^1.62.0:
-  version "1.62.0"
-  resolved "https://registry.yarnpkg.com/serverless/-/serverless-1.62.0.tgz#fd7f653602302c3c3934187bc25fb881eb3838cd"
-  integrity sha512-tfTp9o1UHq5gpGv6o5u8SGgOxCv63hIQ/Tob5grLEkmxwZf2DUjNpI08J+oMbjwje1o1zKYRukpnMMYODii2UA==
+serverless@^1.57.0, serverless@^1.63.0:
+  version "1.63.0"
+  resolved "https://registry.yarnpkg.com/serverless/-/serverless-1.63.0.tgz#1e0a0a7174e95c484e51f2c8199f504987994fb8"
+  integrity sha512-dMwUiAsVoE+25R2jmD0+DfRf9VpvjBN8mgqweXtvm3k6TP536a9Wug8Ue6pc0KpEPc++zg5lIyd1zlTlrSHnPg==
   dependencies:
     "@serverless/cli" "^1.4.0"
     "@serverless/enterprise-plugin" "^3.3.0"
@@ -2815,6 +2815,7 @@ serverless@^1.57.0, serverless@^1.62.0:
     chalk "^2.4.2"
     child-process-ext "^2.1.0"
     ci-info "^1.6.0"
+    d "^1.0.1"
     dayjs "^1.8.19"
     download "^7.1.0"
     essentials "^1.1.1"
@@ -2834,6 +2835,7 @@ serverless@^1.57.0, serverless@^1.62.0:
     jszip "^3.2.2"
     jwt-decode "^2.2.0"
     lodash "^4.17.15"
+    memoizee "^0.4.14"
     mkdirp "^0.5.1"
     nanomatch "^1.2.13"
     ncjsm "^4.0.1"
