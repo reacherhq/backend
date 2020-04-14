@@ -74,22 +74,13 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Build static binary
+        uses: stevenleadbeater/rust-musl-builder@master
         with:
-          profile: minimal
-          target: x86_64-unknown-linux-musl # For the Dockerfile
-          toolchain: stable
-          override: true
+          args: /bin/bash -c "cargo build --release --target=x86_64-unknown-linux-musl" # For the Dockerfile
 
-      - name: Run cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target x86_64-unknown-linux-musl
-
-      - uses: actions/upload-artifact@v1
+      - name: Upload binary as artifact
+        uses: actions/upload-artifact@v1
         with:
           name: reacher-${{ github.event.number }}-${{ github.sha }}
           path: ./target/x86_64-unknown-linux-musl/release/reacher
