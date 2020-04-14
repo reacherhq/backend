@@ -1,15 +1,5 @@
-# Serverless directories
-.serverless
-
-# Generated
-node_modules
-target
-
 # OS-related files
 .DS_Store
 
 # Log files
 *.log
-
-# Secrets
-.env

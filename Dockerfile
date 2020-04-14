@@ -11,7 +11,7 @@ RUN apk update && \
 	rm -rf /var/cache/apk/*
 # Install Tor
 RUN apk add tor
-# Run Tor
+# Run Tor on port 9050
 RUN tor &
 
 # Download the binary from Github

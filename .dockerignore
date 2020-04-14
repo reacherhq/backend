@@ -1,5 +1,2 @@
 .git
 .github
-node_modules
-target
-test
