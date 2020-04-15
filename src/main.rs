@@ -24,9 +24,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 
 	let cors = warp::cors()
+		// FIXME Is there a way to allow all headers?
+		.allow_headers(vec![
+			"Accept",
+			"Accept-Encoding",
+			"Accept-Language",
+			"Access-Control-Request-Method",
+			"Access-Control-Request-Headers",
+			"Connection",
+			"Content-Type",
+			"DNT",
+			"Host",
+			"Origin",
+			"Referer",
+			"Sec-Fetch-Dest",
+			"Sec-Fetch-Mode",
+			"Sec-Fetch-Site",
+			"User-Agent",
+		])
 		.allow_origins(vec!["http://localhost:8000", "https://reacherhq.github.io"])
-		.allow_headers(vec!["*"])
-		.allow_methods(vec!["POST"]);
+		.allow_methods(vec!["OPTIONS", "POST"]);
 
 	// POST / {"to_email":""}
 	let routes = warp::post()
