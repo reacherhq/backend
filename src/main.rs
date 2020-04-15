@@ -50,5 +50,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let http_port = env::var("PORT").unwrap_or_else(|_| "8080".into());
     let addr = SocketAddr::new(http_host.parse()?, http_port.parse()?);
 
-    Ok(warp::serve(routes).run(addr).await)
+	warp::serve(routes).run(addr).await;
+    Ok(())
 }
