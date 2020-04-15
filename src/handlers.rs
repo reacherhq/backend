@@ -34,7 +34,8 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	let mut input = CieeEmailInput::new(body.to_email);
 	input
 		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
-		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
+		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()))
+		.proxy("127.0.0.1".into(), 9050);
 
 	let result = email_exists(&input).await;
 	Ok(warp::reply::json(&result))

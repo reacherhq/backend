@@ -16,8 +16,6 @@
 
 mod handlers;
 
-use std::env;
-use std::net::SocketAddr;
 use warp::Filter;
 
 /// Run a HTTP server using warp.
@@ -41,14 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.with(cors);
 
 	// Since we're running the HTTP server inside a Docker container, we
-	// use 0.0.0.0. Allow for overriding via env variable.
-	let http_host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
-	// http_port is, in this order:
-	// - the $PORT env varialbe
-	// - if not set, then 8080
-	let http_port = env::var("PORT").unwrap_or_else(|_| "8080".into());
-	let addr = SocketAddr::new(http_host.parse()?, http_port.parse()?);
-
-	warp::serve(routes).run(addr).await;
+	// use 0.0.0.0. The port is 8080 as per Fly documentation.
+	warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
 	Ok(())
 }
