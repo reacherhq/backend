@@ -23,33 +23,32 @@ use warp::Filter;
 /// Run a HTTP server using warp.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    env_logger::init();
+	env_logger::init();
 
-    let cors = warp::cors()
-        .allow_origins(vec!["http://127.0.0.1:3000", "https://reacherhq.github.io"])
-        .allow_headers(vec!["*"])
-        .allow_methods(vec!["POST"]);
+	let cors = warp::cors()
+		.allow_origins(vec!["http://127.0.0.1:3000", "https://reacherhq.github.io"])
+		.allow_headers(vec!["*"])
+		.allow_methods(vec!["POST"]);
 
-    // POST / {"to_email":""}
-    let routes = warp::post()
-        .and(warp::path("check_email"))
-        // When accepting a body, we want a JSON body (and to reject huge
-        // payloads)...
-        .and(warp::body::content_length_limit(1024 * 16))
-        .and(warp::body::json())
-        .and_then(handlers::check_email)
-        .with(cors);
+	// POST / {"to_email":""}
+	let routes = warp::post()
+		.and(warp::path("check_email"))
+		// When accepting a body, we want a JSON body (and to reject huge
+		// payloads)...
+		.and(warp::body::content_length_limit(1024 * 16))
+		.and(warp::body::json())
+		.and_then(handlers::check_email)
+		.with(cors);
 
-    // Since we're running the HTTP server inside a Docker container, we
-    // use 0.0.0.0. Allow for overriding via env variable.
-    let http_host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
-    // http_port is, in this order:
-    // - the value of `--http-port` flag
-    // - if not set, then the $PORT env varialbe
-    // - if not set, then 8080
-    let http_port = env::var("PORT").unwrap_or_else(|_| "8080".into());
-    let addr = SocketAddr::new(http_host.parse()?, http_port.parse()?);
+	// Since we're running the HTTP server inside a Docker container, we
+	// use 0.0.0.0. Allow for overriding via env variable.
+	let http_host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
+	// http_port is, in this order:
+	// - the $PORT env varialbe
+	// - if not set, then 8080
+	let http_port = env::var("PORT").unwrap_or_else(|_| "8080".into());
+	let addr = SocketAddr::new(http_host.parse()?, http_port.parse()?);
 
 	warp::serve(routes).run(addr).await;
-    Ok(())
+	Ok(())
 }

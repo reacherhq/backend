@@ -21,21 +21,21 @@ use std::convert::Infallible;
 /// JSON Request from POST /
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EmailInput {
-    from_email: Option<String>,
-    hello_name: Option<String>,
-    to_email: String,
+	from_email: Option<String>,
+	hello_name: Option<String>,
+	to_email: String,
 }
 
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
 pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallible> {
-    // Create EmailInput for check_if_email_exists from body
-    let mut input = CieeEmailInput::new(body.to_email);
-    input
-        .from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
-        .hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
+	// Create EmailInput for check_if_email_exists from body
+	let mut input = CieeEmailInput::new(body.to_email);
+	input
+		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
+		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
 
-    let result = email_exists(&input).await;
-    Ok(warp::reply::json(&result))
+	let result = email_exists(&input).await;
+	Ok(warp::reply::json(&result))
 }
