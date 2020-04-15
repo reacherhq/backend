@@ -13,4 +13,5 @@ RUN tor &
 
 # Copy the binary
 COPY target/x86_64-unknown-linux-musl/release/reacher .
-CMD [ "./reacher"]
+
+CMD ["./reacher"]
