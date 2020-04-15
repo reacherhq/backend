@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 
 	let cors = warp::cors()
-		.allow_origins(vec!["http://127.0.0.1:3000", "https://reacherhq.github.io"])
+		.allow_origins(vec!["http://localhost:8000", "https://reacherhq.github.io"])
 		.allow_headers(vec!["*"])
 		.allow_methods(vec!["POST"]);
 
