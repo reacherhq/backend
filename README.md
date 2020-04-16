@@ -3,6 +3,6 @@
 
 # Reacher Microservices
 
-This package holds the Dockerfile that can deploy [`check-if-email-exists`](https://github.com/reacherhq/check-if-email-exists) as a microservice to online cloud providers.
+This package holds the Dockerfile that can deploy [`check-if-email-exists`](https://github.com/amaurymartiny/check-if-email-exists) as a microservice to online cloud providers.
 
 If you wish to see the legacy code deployed to [Serverless](https://serverless.com/), check out the [`serverless`](https://github.com/reacherhq/microservices/tree/serverless) branch.
