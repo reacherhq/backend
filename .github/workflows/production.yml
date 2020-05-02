@@ -1,8 +1,9 @@
 name: production
 
 on:
-  tags:
-    - v*.*.*
+  push:
+    tags:
+      - v*.*.*
 
 jobs:
   # Build the binary, and publish it as a Github Release
