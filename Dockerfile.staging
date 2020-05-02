@@ -8,7 +8,7 @@ RUN apk update && \
 	rm -rf /var/cache/apk/*
 
 # Assumes a `./reacher` binary in the root folder
-COPY ./reacher
+COPY ./reacher .
 COPY ./scripts/docker_entrypoint.sh .
 
 CMD ["./docker_entrypoint.sh"]

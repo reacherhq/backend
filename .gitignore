@@ -4,7 +4,7 @@
 # Generated
 node_modules
 target
-./reacher
+reacher
 
 # OS-related files
 .DS_Store
