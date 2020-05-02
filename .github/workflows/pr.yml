@@ -2,9 +2,16 @@
 
 name: CI
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
+  # Cargo check
   check:
     runs-on: ubuntu-latest
     steps:
@@ -23,6 +30,7 @@ jobs:
         with:
           command: check
 
+  # Cargo test
   test:
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +50,7 @@ jobs:
           command: test
           args: --all
 
+  # Cargo fmt and clippy
   lints:
     runs-on: ubuntu-latest
     steps:
@@ -68,6 +77,7 @@ jobs:
           command: clippy
           args: -- -D warnings
 
+  # Build a binary with target `x86_64-unknown-linux-musl`, put in artifacts
   build:
     runs-on: ubuntu-latest
     steps:
@@ -77,10 +87,36 @@ jobs:
       - name: Build static binary
         uses: stevenleadbeater/rust-musl-builder@master
         with:
-          args: /bin/bash -c "cargo build --release --target=x86_64-unknown-linux-musl" # For the Dockerfile
+          args: /bin/bash -c "cargo build --release --target=x86_64-unknown-linux-musl"
 
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v1
         with:
-          name: reacher-${{ github.event.number }}-${{ github.sha }}
+          name: reacher-${{ github.sha }}
           path: ./target/x86_64-unknown-linux-musl/release/reacher
+
+  # Deploy a staging release on Fly
+  staging:
+    runs-on: ubuntu-latest
+    # if: github.ref == 'refs/heads/master'
+    needs: build
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Download binary
+        uses: actions/download-artifact@v1
+        with:
+          name: reacher-${{ github.sha }}
+
+      - name: Rename binary
+        run: |
+          mv reacher-${{ github.sha }}/reacher .
+          chmod a+x reacher
+
+      - name: Deploy to Fly (Staging)
+        uses: superfly/flyctl-actions@master
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        with:
+          args: "deploy --config fly.staging.toml"

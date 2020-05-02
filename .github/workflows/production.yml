@@ -31,3 +31,10 @@ jobs:
           name: Reacher ${{ env.REACHER_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Fly (Production)
+        uses: superfly/flyctl-actions@master
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        with:
+          args: "deploy --config fly.production.toml --dockerfile Dockerfile.production --remote-only"

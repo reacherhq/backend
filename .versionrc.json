@@ -1,7 +1,7 @@
 {
 	"bumpFiles": [
 		{
-			"filename": "Dockerfile",
+			"filename": "Dockerfile.production",
 			"updater": "scripts/update-dockerfile.js"
 		}
 	]

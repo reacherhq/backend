@@ -4,12 +4,10 @@
 # Generated
 node_modules
 target
+reacher
 
 # OS-related files
 .DS_Store
 
 # Log files
 *.log
-
-# Secrets
-.env

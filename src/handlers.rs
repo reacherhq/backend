@@ -46,6 +46,13 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	// - the email is syntactically correct
 	// - AND yet the `mx` or `smtp` field contains an error
 	if result.syntax.is_ok() && (result.mx.is_err() || result.smtp.is_err()) {
+		log::error!(
+			target: "reacher",
+			"{:?} {:?}",
+			result.mx,
+			result.smtp
+		);
+
 		Ok(warp::reply::with_status(
 			json,
 			StatusCode::INTERNAL_SERVER_ERROR,

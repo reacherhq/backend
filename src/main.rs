@@ -23,30 +23,7 @@ use warp::Filter;
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 
-	let cors = warp::cors()
-		// FIXME Is there a way to allow all headers?
-		// https://github.com/seanmonstar/warp/issues/536
-		.allow_headers(vec![
-			"Accept",
-			"Accept-Encoding",
-			"Accept-Language",
-			"Access-Control-Request-Method",
-			"Access-Control-Request-Headers",
-			"Connection",
-			"Content-Type",
-			"DNT",
-			"Host",
-			"Origin",
-			"Referer",
-			"Sec-Fetch-Dest",
-			"Sec-Fetch-Mode",
-			"Sec-Fetch-Site",
-			"User-Agent",
-		])
-		.allow_origins(vec!["http://localhost:8000", "https://reacherhq.github.io"])
-		.allow_methods(vec!["OPTIONS", "POST"]);
-
-	// POST / {"to_email":""}
+	// POST /check_email
 	let routes = warp::post()
 		.and(warp::path("check_email"))
 		// When accepting a body, we want a JSON body (and to reject huge
@@ -54,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
 		.and_then(handlers::check_email)
-		.with(cors);
+		.with(warp::log("reacher"));
 
 	// Since we're running the HTTP server inside a Docker container, we
 	// use 0.0.0.0. The port is 8080 as per Fly documentation.
