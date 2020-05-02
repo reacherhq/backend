@@ -119,4 +119,4 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         with:
-          args: "deploy --config fly.staging.toml"
+          args: "deploy --config fly.staging.toml --dockerfile Dockerfile.staging"
