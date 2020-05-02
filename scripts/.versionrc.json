@@ -1,8 +1,0 @@
-{
-  "bumpFiles": [
-    {
-      "filename": "Dockerfile",
-      "updater": "standard-version-updater.js"
-    }
-  ]
-}
