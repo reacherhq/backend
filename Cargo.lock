@@ -1410,6 +1410,7 @@ version = "0.4.1"
 dependencies = [
  "check-if-email-exists",
  "env_logger",
+ "log 0.4.8",
  "serde",
  "tokio",
  "warp",

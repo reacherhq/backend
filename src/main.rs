@@ -16,12 +16,45 @@
 
 mod handlers;
 
+use env_logger;
+use log;
+use std::fmt;
 use warp::Filter;
+
+/// Display an Option<T> nicely.
+struct OptFmt<T>(Option<T>);
+
+impl<T: fmt::Display> fmt::Display for OptFmt<T> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		if let Some(ref t) = self.0 {
+			fmt::Display::fmt(t, f)
+		} else {
+			f.write_str("-")
+		}
+	}
+}
 
 /// Run a HTTP server using warp.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
+
+	// Custom logger
+	let log = warp::log::custom(|info| {
+		// TODO?
+		// - response content length?
+		log::info!(
+			target: "reacher",
+			"\"{} {}\" {} \"{}\" \"{}\" \"{}\" {:?}",
+			info.method(),
+			info.path(),
+			info.status().as_u16(),
+			OptFmt(info.referer()),
+			OptFmt(info.user_agent()),
+			OptFmt(info.host()),
+			info.elapsed(),
+		);
+	});
 
 	let cors = warp::cors()
 		// FIXME Is there a way to allow all headers?
@@ -46,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.allow_origins(vec!["http://localhost:8000", "https://reacherhq.github.io"])
 		.allow_methods(vec!["OPTIONS", "POST"]);
 
-	// POST / {"to_email":""}
+	// POST /check_email
 	let routes = warp::post()
 		.and(warp::path("check_email"))
 		// When accepting a body, we want a JSON body (and to reject huge
@@ -54,6 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
 		.and_then(handlers::check_email)
+		.with(log)
 		.with(cors);
 
 	// Since we're running the HTTP server inside a Docker container, we
