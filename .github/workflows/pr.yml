@@ -95,8 +95,7 @@ jobs:
   staging:
     runs-on: ubuntu-latest
     # if: github.ref == 'refs/heads/master'
-    needs: package-extension
-
+    needs: build
     steps:
       - name: Download binary
         uses: actions/download-artifact@v1
