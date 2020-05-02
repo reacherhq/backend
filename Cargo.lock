@@ -1406,7 +1406,7 @@ dependencies = [
 
 [[package]]
 name = "reacher"
-version = "0.4.1"
+version = "0.1.1"
 dependencies = [
  "check-if-email-exists",
  "env_logger",

@@ -16,8 +16,6 @@
 
 mod handlers;
 
-use env_logger;
-use log;
 use std::fmt;
 use warp::Filter;
 
