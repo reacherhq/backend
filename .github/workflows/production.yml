@@ -1,0 +1,26 @@
+name: production
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  # Build the binary, and publish it as a Github Release
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Build static binary
+        uses: stevenleadbeater/rust-musl-builder@master
+        with:
+          args: /bin/bash -c "cargo build --release --target=x86_64-unknown-linux-musl" # For the Dockerfile
+
+      - name: Create a Github Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./target/x86_64-unknown-linux-musl/release/reacher
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

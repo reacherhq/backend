@@ -25,6 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	let cors = warp::cors()
 		// FIXME Is there a way to allow all headers?
+		// https://github.com/seanmonstar/warp/issues/536
 		.allow_headers(vec![
 			"Accept",
 			"Accept-Encoding",

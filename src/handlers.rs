@@ -17,6 +17,7 @@
 use check_if_email_exists::{email_exists, EmailInput as CieeEmailInput};
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
+use warp::http::StatusCode;
 
 /// JSON Request from POST /
 #[derive(Debug, Deserialize, Serialize)]
@@ -35,8 +36,21 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	input
 		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
 		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()))
+		// We proxy through Tor, running locally on 127.0.0.1:9050
 		.proxy("127.0.0.1".into(), 9050);
 
 	let result = email_exists(&input).await;
-	Ok(warp::reply::json(&result))
+	let json = warp::reply::json(&result);
+
+	// We consider `email_exists` failed if:
+	// - the email is syntactically correct
+	// - AND yet the `mx` or `smtp` field contains an error
+	if result.syntax.is_ok() && (result.mx.is_err() || result.smtp.is_err()) {
+		Ok(warp::reply::with_status(
+			json,
+			StatusCode::INTERNAL_SERVER_ERROR,
+		))
+	} else {
+		Ok(warp::reply::with_status(json, StatusCode::OK))
+	}
 }
