@@ -35,6 +35,7 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	input
 		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
 		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()))
+		// We proxy through Tor, running locally on 127.0.0.1:9050
 		.proxy("127.0.0.1".into(), 9050);
 
 	let result = email_exists(&input).await;
