@@ -14,16 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
-// standard-version-updater.js
+// Update the version in `Dockerfile` each time we run `standard-version`.
 // https://github.com/conventional-changelog/standard-version
 
 module.exports.readVersion = function (contents) {
-	console.log(contents);
+	// Find the version in the Dockerfile
+	return /[0-9]+\.[0-9]+\.[0-9]+/.exec(contents)[0];
 };
 
-module.exports.writeVersion = function (contents, version) {
-	const json = JSON.parse(contents);
-	json.tracker.package.version = version;
+module.exports.writeVersion = function (contents, newVersion) {
+	const oldVersion = /[0-9]+\.[0-9]+\.[0-9]+/.exec(contents)[0];
 
-	return stringifyPackage(json, indent, newline);
+	// Update version in Dockerfile to the one from standard-version
+	return contents.replace(oldVersion, newVersion);
 };
