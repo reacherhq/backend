@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.2](https://github.com/reacherhq/backend/compare/v0.1.1...v0.1.2) (2020-05-02)
+
+
+### Features
+
+* Add logging of routes ([#34](https://github.com/reacherhq/backend/issues/34)) ([3181087](https://github.com/reacherhq/backend/commit/3181087a5a627cfa13a72269f189f4e302f47e60))
+
 ### [0.1.1](https://github.com/reacherhq/backend/compare/v0.1.0...v0.1.1) (2020-05-02)
 
 
