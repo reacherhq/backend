@@ -101,6 +101,9 @@ jobs:
     # if: github.ref == 'refs/heads/master'
     needs: build
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
       - name: Download binary
         uses: actions/download-artifact@v1
         with:
@@ -116,4 +119,4 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         with:
-          args: "deploy --app reacher-staging --config fly.staging.toml --dockerfile ./Dockerfile.staging"
+          args: "deploy --config fly.staging.toml --dockerfile ./Dockerfile.staging"
