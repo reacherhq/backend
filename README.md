@@ -1,8 +1,8 @@
-[![Actions Status](https://github.com/reacherhq/microservices/workflows/pr/badge.svg)](https://github.com/reacherhq/microservices/actions)
-![GitHub](https://img.shields.io/github/license/reacherhq/microservices.svg)
+[![Actions Status](https://github.com/reacherhq/backend/workflows/pr/badge.svg)](https://github.com/reacherhq/backend/actions)
+![GitHub](https://img.shields.io/github/license/reacherhq/backend.svg)
 
-# Reacher Microservices
+# Reacher Backend
 
-This package holds the Dockerfile that can deploy [`check-if-email-exists`](https://github.com/reacherhq/check-if-email-exists) as a microservice to online cloud providers.
+This repo holds the backend for [Reacher](https://reacherhq.github.io/).
 
-If you wish to see the legacy code deployed to [Serverless](https://serverless.com/), check out the [`serverless`](https://github.com/reacherhq/microservices/tree/serverless) branch.
+The OpenAPIv3 specification of this backend can be seen on [StopLight](https://stoplight.io/p/docs/gh/reacherhq/openapi).
