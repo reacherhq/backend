@@ -1,0 +1,14 @@
+FROM alpine:latest
+
+WORKDIR /reacher
+
+# Install needed libraries
+RUN apk update && \
+	apk add --no-cache openssl tor && \
+	rm -rf /var/cache/apk/*
+
+# Assumes a `./reacher` binary in the root folder
+COPY ./reacher
+COPY ./scripts/docker_entrypoint.sh .
+
+CMD ["./docker_entrypoint.sh"]
