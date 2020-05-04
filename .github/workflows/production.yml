@@ -25,7 +25,6 @@ jobs:
         run: |
           cd ./target/x86_64-unknown-linux-musl/release
           tar -czvf reacher-${{ env.REACHER_VERSION }}-x86_64-unknown-linux-musl.tar.gz reacher
-          ls
 
       - name: Create a Github Release
         uses: softprops/action-gh-release@v1
