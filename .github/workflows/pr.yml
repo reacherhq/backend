@@ -98,7 +98,7 @@ jobs:
   # Deploy a staging release on Fly
   staging:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
     needs: build
     steps:
       - name: Checkout sources
