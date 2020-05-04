@@ -5,4 +5,4 @@
 
 This repo holds the backend for [Reacher](https://reacherhq.github.io/).
 
-The OpenAPIv3 specification of this backend can be seen on [StopLight](https://stoplight.io/p/docs/gh/reacherhq/openapi).
+The OpenAPIv3 specification of this backend can be seen on [StopLight](https://stoplight.io/p/docs/gh/reacherhq/backend).
