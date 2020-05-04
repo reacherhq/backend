@@ -14,17 +14,45 @@
 // You should have received a copy of the GNU General Public License
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
-use check_if_email_exists::{email_exists, EmailInput as CieeEmailInput};
+use check_if_email_exists::{email_exists, EmailInput as CieeEmailInput, SingleEmail};
+use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::convert::Infallible;
 use warp::http::StatusCode;
 
-/// JSON Request from POST /
+/// JSON Request from POST /check_email
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EmailInput {
 	from_email: Option<String>,
 	hello_name: Option<String>,
 	to_email: String,
+}
+
+/// Helper function to send an event to Sentry, in case our check_email
+/// function fails, and return a 500 error response.
+fn log_error(
+	message: String,
+	result: SingleEmail,
+) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
+	let json = warp::reply::json(&result);
+
+	let mut extra = BTreeMap::new();
+	extra.insert(
+		"SingleEmail".into(),
+		Value::String(format!("{:#?}", result)),
+	);
+
+	sentry::capture_event(Event {
+		extra,
+		message: Some(message),
+		..Default::default()
+	});
+
+	Ok(warp::reply::with_status(
+		json,
+		StatusCode::INTERNAL_SERVER_ERROR,
+	))
 }
 
 /// Given an email address (and optionally some additional configuration
@@ -40,24 +68,16 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 		.proxy("127.0.0.1".into(), 9050);
 
 	let result = email_exists(&input).await;
-	let json = warp::reply::json(&result);
 
 	// We consider `email_exists` failed if:
 	// - the email is syntactically correct
 	// - AND yet the `mx` or `smtp` field contains an error
-	if result.syntax.is_ok() && (result.mx.is_err() || result.smtp.is_err()) {
-		log::error!(
-			target: "reacher",
-			"{:?} {:?}",
-			result.mx,
-			result.smtp
-		);
-
-		Ok(warp::reply::with_status(
-			json,
-			StatusCode::INTERNAL_SERVER_ERROR,
-		))
-	} else {
-		Ok(warp::reply::with_status(json, StatusCode::OK))
+	match (&result.syntax, &result.mx, &result.smtp) {
+		(Ok(_), Err(error), _) => log_error(format!("{:?}", error), result),
+		(Ok(_), _, Err(error)) => log_error(format!("{:?}", error), result),
+		_ => Ok(warp::reply::with_status(
+			warp::reply::json(&result),
+			StatusCode::OK,
+		)),
 	}
 }
