@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.4](https://github.com/reacherhq/backend/compare/v0.1.3...v0.1.4) (2020-05-04)
+
+
+### Features
+
+* Add sentry error logging ([#42](https://github.com/reacherhq/backend/issues/42)) ([37c1889](https://github.com/reacherhq/backend/commit/37c18891ccecc1b11fe306ca1bbeff7d9cd98f82))
+
 ### [0.1.3](https://github.com/reacherhq/backend/compare/v0.1.2...v0.1.3) (2020-05-04)
 
 
