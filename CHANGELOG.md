@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/reacherhq/backend/compare/v0.1.2...v0.1.3) (2020-05-04)
+
+
+### Features
+
+* Add openapi specification ([#39](https://github.com/reacherhq/backend/issues/39)) ([2c0c91d](https://github.com/reacherhq/backend/commit/2c0c91d073136bdc18f2d6d3a1ab3e60945e348f))
+
 ### [0.1.2](https://github.com/reacherhq/backend/compare/v0.1.1...v0.1.2) (2020-05-02)
 
 
