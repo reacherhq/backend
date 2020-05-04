@@ -8,7 +8,7 @@ RUN apk update && \
 	rm -rf /var/cache/apk/*
 
 # Assumes a `./reacher` binary in the root folder. This ./reacher binary is
-# built on CI, but you can also copy it from ./target/{debut,release}.
+# built on CI, but you can also copy it from ./target/{debug,release}.
 COPY ./reacher .
 COPY ./scripts/docker_entrypoint.sh .
 
