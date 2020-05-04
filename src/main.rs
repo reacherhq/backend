@@ -26,9 +26,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	// Use an empty string if we don't have any env variable for sentry. Sentry
 	// will just silently ignore.
-	let _sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
+	let sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
 	// Sentry will also catch panics.
 	sentry::integrations::panic::register_panic_handler();
+	if sentry.is_enabled() {
+		log::info!(target: "reacher", "Sentry is successfully set up.")
+	}
 
 	// POST /check_email
 	let routes = warp::post()
@@ -40,6 +43,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.and_then(handlers::check_email)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"));
+
+	log::info!(target: "reacher", "Server is listening on :8080.");
 
 	// Since we're running the HTTP server inside a Docker container, we
 	// use 0.0.0.0. The port is 8080 as per Fly documentation.
