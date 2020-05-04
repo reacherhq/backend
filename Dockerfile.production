@@ -2,7 +2,7 @@ FROM alpine:latest
 
 WORKDIR /reacher
 
-ENV REACHER_VERSION 0.1.1
+ENV REACHER_VERSION 0.1.2
 
 # Install needed libraries
 RUN apk update && \
