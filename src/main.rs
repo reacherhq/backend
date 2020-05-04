@@ -16,12 +16,19 @@
 
 mod handlers;
 
+use std::env;
 use warp::Filter;
 
 /// Run a HTTP server using warp.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
+
+	// Use an empty string if we don't have any env variable for sentry. Sentry
+	// will just silently ignore.
+	let _sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
+	// Sentry will also catch panics.
+	sentry::integrations::panic::register_panic_handler();
 
 	// POST /check_email
 	let routes = warp::post()
@@ -31,6 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
 		.and_then(handlers::check_email)
+		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"));
 
 	// Since we're running the HTTP server inside a Docker container, we
