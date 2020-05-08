@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.6](https://github.com/reacherhq/backend/compare/v0.1.5...v0.1.6) (2020-05-08)
+
+
+### Bug Fixes
+
+* **deps:** Update to check-if-email-exists 0.8 ([#45](https://github.com/reacherhq/backend/issues/45)) ([2eaf1a2](https://github.com/reacherhq/backend/commit/2eaf1a29162a51671026156cd8be6dd592f3b76a))
+
 ### [0.1.5](https://github.com/reacherhq/backend/compare/v0.1.4...v0.1.5) (2020-05-04)
 
 
