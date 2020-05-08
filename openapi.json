@@ -22,7 +22,7 @@
   "paths": {
     "/check_email": {
       "post": {
-        "summary": "Email verification.",
+        "summary": "Email verification function",
         "responses": {
           "200": {
             "description": "OK",
