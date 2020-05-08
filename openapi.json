@@ -126,14 +126,12 @@
                   "from_email": {
                     "type": "string",
                     "description": "In the SMTP connection, the FROM email address.",
-                    "format": "email",
-                    "default": "user@example.org"
+                    "format": "email"
                   },
                   "hello_name": {
                     "type": "string",
                     "description": "In the SMTP connection, the EHLO hostname.",
-                    "format": "hostname",
-                    "default": "example.org"
+                    "format": "hostname"
                   }
                 },
                 "required": [
