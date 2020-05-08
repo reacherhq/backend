@@ -17,8 +17,7 @@
 use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
 use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::convert::Infallible;
+use std::{collections::BTreeMap, convert::Infallible, env};
 use warp::http::StatusCode;
 
 /// JSON Request from POST /check_email
@@ -39,7 +38,7 @@ fn log_error(
 
 	let mut extra = BTreeMap::new();
 	extra.insert(
-		"SingleEmail".into(),
+		"CheckEmailInput".into(),
 		Value::String(format!("{:#?}", result)),
 	);
 
@@ -63,9 +62,17 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
 		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
-		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()))
-		// We proxy through Tor, running locally on 127.0.0.1:9050
-		.proxy("127.0.0.1".into(), 9050);
+		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
+
+	// If relevant ENV vars are set, we proxy.
+	match (env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT")) {
+		(Ok(proxy_host), Ok(proxy_port)) => {
+			if let Ok(proxy_port) = proxy_port.parse::<u16>() {
+				input.proxy(proxy_host, proxy_port);
+			}
+		}
+		_ => (),
+	}
 
 	let mut result = ciee_check_email(&input).await;
 	let result = result
