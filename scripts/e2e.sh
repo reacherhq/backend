@@ -10,6 +10,7 @@ set -e
 
 # Run reacher, assumes the binary is in ./target/release
 ./target/debug/reacher &
+sleep 5
 
 # Do some simple curl requests
 
