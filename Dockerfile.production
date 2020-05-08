@@ -2,7 +2,10 @@ FROM alpine:latest
 
 WORKDIR /reacher
 
-ENV REACHER_VERSION 0.1.5
+ENV REACHER_VERSION 0.1.6
+# Environment variables for Tor proxying in Reacher
+ENV RCH_PROXY_HOST = 127.0.0.1
+ENV RCH_PROXY_PORT = 9050
 
 # Install needed libraries
 RUN apk update && \

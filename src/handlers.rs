@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
-use check_if_email_exists::{email_exists, EmailInput as CieeEmailInput, SingleEmail};
+use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
 use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::convert::Infallible;
+use std::{collections::BTreeMap, convert::Infallible, env};
 use warp::http::StatusCode;
 
 /// JSON Request from POST /check_email
@@ -33,13 +32,13 @@ pub struct EmailInput {
 /// function fails, and return a 500 error response.
 fn log_error(
 	message: String,
-	result: SingleEmail,
+	result: CheckEmailOutput,
 ) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
 	let json = warp::reply::json(&result);
 
 	let mut extra = BTreeMap::new();
 	extra.insert(
-		"SingleEmail".into(),
+		"CheckEmailInput".into(),
 		Value::String(format!("{:#?}", result)),
 	);
 
@@ -60,21 +59,31 @@ fn log_error(
 /// `check_if_email_exists`.
 pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallible> {
 	// Create EmailInput for check_if_email_exists from body
-	let mut input = CieeEmailInput::new(body.to_email);
+	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
 		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
-		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()))
-		// We proxy through Tor, running locally on 127.0.0.1:9050
-		.proxy("127.0.0.1".into(), 9050);
+		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
 
-	let result = email_exists(&input).await;
+	// If relevant ENV vars are set, we proxy.
+	if let (Ok(proxy_host), Ok(proxy_port)) =
+		(env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT"))
+	{
+		if let Ok(proxy_port) = proxy_port.parse::<u16>() {
+			input.proxy(proxy_host, proxy_port);
+		}
+	}
 
-	// We consider `email_exists` failed if:
-	// - the email is syntactically correct
-	// - AND yet the `mx` or `smtp` field contains an error
-	match (&result.syntax, &result.mx, &result.smtp) {
-		(Ok(_), Err(error), _) => log_error(format!("{:?}", error), result),
-		(Ok(_), _, Err(error)) => log_error(format!("{:?}", error), result),
+	let mut result = ciee_check_email(&input).await;
+	let result = result
+		.pop()
+		.expect("The input has one element, so does the output. qed.");
+
+	// We consider `email_exists` failed if at least one of the misc, mx or smtp
+	// fields contains an error.
+	match (&result.misc, &result.mx, &result.smtp) {
+		(Err(error), _, _) => log_error(format!("{:?}", error), result),
+		(_, Err(error), _) => log_error(format!("{:?}", error), result),
+		(_, _, Err(error)) => log_error(format!("{:?}", error), result),
 		_ => Ok(warp::reply::with_status(
 			warp::reply::json(&result),
 			StatusCode::OK,
