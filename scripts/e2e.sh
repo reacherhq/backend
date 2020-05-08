@@ -9,7 +9,7 @@
 set -e
 
 # Run reacher, assumes the binary is in ./target/release
-./target/release/reacher &
+./target/debug/reacher &
 
 # Do some simple curl requests
 
