@@ -65,13 +65,12 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
 
 	// If relevant ENV vars are set, we proxy.
-	match (env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT")) {
-		(Ok(proxy_host), Ok(proxy_port)) => {
-			if let Ok(proxy_port) = proxy_port.parse::<u16>() {
-				input.proxy(proxy_host, proxy_port);
-			}
+	if let (Ok(proxy_host), Ok(proxy_port)) =
+		(env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT"))
+	{
+		if let Ok(proxy_port) = proxy_port.parse::<u16>() {
+			input.proxy(proxy_host, proxy_port);
 		}
-		_ => (),
 	}
 
 	let mut result = ciee_check_email(&input).await;
