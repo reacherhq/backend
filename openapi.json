@@ -1,373 +1,357 @@
 {
-	"openapi": "3.0.0",
-	"info": {
-		"title": "Reacher",
-		"version": "0.1",
-		"description": "Reacher backend OpenAPIv3 specification.",
-		"license": {
-			"name": "GPL-3.0",
-			"url": "https://github.com/reacherhq/microservices/blob/master/LICENSE"
-		},
-		"contact": {
-			"name": "Reacher",
-			"url": "https://reacher.github.io"
-		}
-	},
-	"servers": [
-		{
-			"url": "https://reacher.fly.dev",
-			"description": "Powered by Fly"
-		}
-	],
-	"paths": {
-		"/check_email": {
-			"post": {
-				"summary": "Email verification.",
-				"responses": {
-					"200": {
-						"description": "OK",
-						"content": {
-							"application/json": {
-								"schema": {
-									"$ref": "#/components/schemas/EmailResult"
-								},
-								"examples": {
-									"Example": {
-										"value": {
-											"input": "test@gmail.com",
-											"misc": {
-												"is_disposable": false
-											},
-											"mx": {
-												"records": [
-													"alt4.gmail-smtp-in.l.google.com.",
-													"alt2.gmail-smtp-in.l.google.com.",
-													"alt3.gmail-smtp-in.l.google.com.",
-													"gmail-smtp-in.l.google.com.",
-													"alt1.gmail-smtp-in.l.google.com."
-												]
-											},
-											"smtp": {
-												"has_full_inbox": false,
-												"is_catch_all": false,
-												"is_deliverable": false,
-												"is_disabled": false
-											},
-											"syntax": {
-												"address": "test@gmail.com",
-												"domain": "gmail.com",
-												"username": "test",
-												"valid_format": true
-											}
-										}
-									}
-								}
-							}
-						}
-					},
-					"500": {
-						"description": "Internal Server Error. This may seldom happen when the MX or SMTP verifications fail. The error is described in the `mx` or `smtp` fields of the JSON body.",
-						"content": {
-							"application/json": {
-								"schema": {
-									"$ref": "#/components/schemas/EmailResult"
-								},
-								"examples": {
-									"test@gmail.com": {
-										"value": {
-											"input": "test@gmail.com",
-											"misc": {
-												"is_disposable": false
-											},
-											"mx": {
-												"records": [
-													"alt2.gmail-smtp-in.l.google.com.",
-													"alt1.gmail-smtp-in.l.google.com.",
-													"alt3.gmail-smtp-in.l.google.com.",
-													"gmail-smtp-in.l.google.com.",
-													"alt4.gmail-smtp-in.l.google.com."
-												]
-											},
-											"smtp": {
-												"error": {
-													"type": "SmtpError",
-													"message": "client: Connection closed"
-												}
-											},
-											"syntax": {
-												"address": "test@gmail.com",
-												"domain": "gmail.com",
-												"is_valid_syntax": true,
-												"username": "test"
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				},
-				"operationId": "post-check-email",
-				"description": "Perform a full verification of an email address.",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"description": "Object containing parameters for the email verification.",
-								"properties": {
-									"to_email": {
-										"type": "string",
-										"description": "The email address to check.",
-										"format": "email",
-										"example": "test@gmail.com"
-									},
-									"from_email": {
-										"type": "string",
-										"description": "In the SMTP connection, the FROM email address.",
-										"format": "email",
-										"default": "user@example.org"
-									},
-									"hello_name": {
-										"type": "string",
-										"description": "In the SMTP connection, the EHLO hostname.",
-										"format": "hostname",
-										"default": "example.org"
-									}
-								},
-								"required": ["to_email"]
-							}
-						}
-					},
-					"description": "Object containing parameters for the email verification."
-				},
-				"parameters": []
-			}
-		}
-	},
-	"components": {
-		"schemas": {
-			"EmailResult": {
-				"title": "EmailResult",
-				"type": "object",
-				"x-examples": {
-					"test@gmail.com": {
-						"input": "test@gmail.com",
-						"misc": {
-							"is_disposable": false
-						},
-						"mx": {
-							"records": [
-								"alt4.gmail-smtp-in.l.google.com.",
-								"alt2.gmail-smtp-in.l.google.com.",
-								"alt3.gmail-smtp-in.l.google.com.",
-								"gmail-smtp-in.l.google.com.",
-								"alt1.gmail-smtp-in.l.google.com."
-							]
-						},
-						"smtp": {
-							"has_full_inbox": false,
-							"is_catch_all": false,
-							"is_deliverable": false,
-							"is_disabled": false
-						},
-						"syntax": {
-							"address": "test@gmail.com",
-							"domain": "gmail.com",
-							"username": "test",
-							"valid_format": true
-						}
-					}
-				},
-				"description": "The verification result of an email.",
-				"properties": {
-					"input": {
-						"type": "string",
-						"format": "email",
-						"description": "The input email address."
-					},
-					"misc": {
-						"oneOf": [
-							{
-								"description": "This field is present when the misc verifications succeed.",
-								"type": "object",
-								"properties": {
-									"is_disposable": {
-										"description": "Is the address provided by a known disposable email address provider?",
-										"type": "boolean"
-									}
-								},
-								"required": ["is_disposable"]
-							},
-							{
-								"$ref": "#/components/schemas/MiscError"
-							}
-						],
-						"description": "Miscellaneous information about the email account."
-					},
-					"mx": {
-						"oneOf": [
-							{
-								"description": "This field is present when the MX verifications succeed.",
-								"type": "object",
-								"properties": {
-									"mx": {
-										"type": "object",
-										"description": "Object holding the MX records of the mail server.",
-										"required": ["records"],
-										"properties": {
-											"records": {
-												"type": "array",
-												"uniqueItems": true,
-												"minItems": 1,
-												"description": "The list of FQDN (Fully Qualified Domain Names) of the mail server.",
-												"items": {
-													"type": "string",
-													"format": "hostname"
-												}
-											}
-										}
-									}
-								},
-								"required": ["mx"]
-							},
-							{
-								"$ref": "#/components/schemas/MxError"
-							}
-						],
-						"description": "Information gathered from querying the MX records of the mail server."
-					},
-					"smtp": {
-						"oneOf": [
-							{
-								"description": "This field is present when the SMTP verifications succeed.",
-								"type": "object",
-								"properties": {
-									"has_full_inbox": {
-										"type": "boolean",
-										"description": "Is the inbox of this mailbox full?"
-									},
-									"is_catch_all": {
-										"type": "boolean",
-										"description": "Is this email address a catch-all address?"
-									},
-									"is_deliverable": {
-										"type": "boolean",
-										"description": "Is an email sent to this address deliverable?"
-									},
-									"is_disabled": {
-										"type": "boolean",
-										"description": "Has this email address been disabled by the email provider?"
-									}
-								},
-								"required": ["has_full_inbox", "is_catch_all", "is_deliverable", "is_disabled"]
-							},
-							{
-								"$ref": "#/components/schemas/SmtpError"
-							}
-						],
-						"description": "Verifications performed by connecting to the mail server via SMTP."
-					},
-					"syntax": {
-						"oneOf": [
-							{
-								"description": "This field is present when the syntax verifications succeed.",
-								"type": "object",
-								"properties": {
-									"domain": {
-										"type": "string",
-										"description": "The domain name of the email, i.e. the part after the \"@\" symbol.",
-										"format": "hostname"
-									},
-									"is_valid_syntax": {
-										"type": "boolean",
-										"description": "Is the address syntactically valid?"
-									},
-									"username": {
-										"type": "string",
-										"description": "The username of the email, i.e. the part before the \"@\" symbol."
-									}
-								},
-								"required": ["domain", "is_valid_syntax", "username"]
-							},
-							{
-								"$ref": "#/components/schemas/SyntaxError"
-							}
-						],
-						"description": "Syntax validation of an email address."
-					}
-				},
-				"required": ["input", "misc", "mx", "smtp", "syntax"]
-			},
-			"SyntaxError": {
-				"title": "SyntaxError",
-				"type": "object",
-				"description": "Object describing an error happening during the syntax verifications.",
-				"properties": {
-					"message": {
-						"type": "string",
-						"description": "A human-readable description of the error."
-					},
-					"type": {
-						"type": "string",
-						"description": "Generic error type.",
-						"enum": ["SyntaxError"]
-					}
-				},
-				"required": ["message", "type"]
-			},
-			"SmtpError": {
-				"title": "SmtpError",
-				"type": "object",
-				"description": "Object describing an error happening during the SMTP verifications.",
-				"properties": {
-					"type": {
-						"type": "string",
-						"description": "Generic error type.",
-						"enum": ["Skipped", "SocksError", "SmtpError"]
-					},
-					"message": {
-						"type": "string",
-						"description": "A human-readable description of the error."
-					}
-				},
-				"required": ["type", "message"]
-			},
-			"MxError": {
-				"title": "MxError",
-				"type": "object",
-				"description": "Object describing an error happening during the MX verifications.",
-				"properties": {
-					"type": {
-						"type": "string",
-						"description": "Generic error type.",
-						"enum": ["Skipped", "IoError", "ResolveError"]
-					},
-					"message": {
-						"type": "string",
-						"description": "A human-readable description of the error."
-					}
-				},
-				"required": ["type", "message"]
-			},
-			"MiscError": {
-				"title": "MiscError",
-				"type": "object",
-				"description": "Object describing an error happening during the misc verifications.",
-				"properties": {
-					"type": {
-						"type": "string",
-						"enum": ["MiscError"],
-						"description": "Generic error type."
-					},
-					"message": {
-						"type": "string",
-						"description": "A human-readable description of the error."
-					}
-				},
-				"required": ["type", "message"]
-			}
-		},
-		"securitySchemes": {}
-	}
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Reacher",
+    "version": "0.1",
+    "description": "Reacher backend OpenAPIv3 specification.",
+    "license": {
+      "name": "GPL-3.0",
+      "url": "https://github.com/reacherhq/microservices/blob/master/LICENSE"
+    },
+    "contact": {
+      "name": "Reacher",
+      "url": "https://reacher.github.io"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://reacher.fly.dev",
+      "description": "Powered by Fly"
+    }
+  ],
+  "paths": {
+    "/check_email": {
+      "post": {
+        "summary": "Email verification.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailResult"
+                },
+                "examples": {
+                  "Example with test@gmail.com": {
+                    "value": {
+                      "input": "test@gmail.com",
+                      "misc": {
+                        "is_disposable": false
+                      },
+                      "mx": {
+                        "accepts_mail": true,
+                        "records": [
+                          "alt4.gmail-smtp-in.l.google.com.",
+                          "alt2.gmail-smtp-in.l.google.com.",
+                          "alt3.gmail-smtp-in.l.google.com.",
+                          "gmail-smtp-in.l.google.com.",
+                          "alt1.gmail-smtp-in.l.google.com."
+                        ]
+                      },
+                      "smtp": {
+                        "can_connect_smtp": true,
+                        "has_full_inbox": false,
+                        "is_catch_all": false,
+                        "is_deliverable": false,
+                        "is_disabled": false
+                      },
+                      "syntax": {
+                        "domain": "gmail.com",
+                        "is_valid_syntax": true,
+                        "username": "test"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error. This may seldom happen when the MX or SMTP verifications fail. The error is described in the `mx` or `smtp` fields of the JSON body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailResult"
+                },
+                "examples": {
+                  "Example with test@gmail.com": {
+                    "value": {
+                      "input": "test@gmail.com",
+                      "misc": {
+                        "is_disposable": false
+                      },
+                      "mx": {
+                        "accepts_mail": true,
+                        "records": [
+                          "alt2.gmail-smtp-in.l.google.com.",
+                          "alt1.gmail-smtp-in.l.google.com.",
+                          "alt3.gmail-smtp-in.l.google.com.",
+                          "gmail-smtp-in.l.google.com.",
+                          "alt4.gmail-smtp-in.l.google.com."
+                        ]
+                      },
+                      "smtp": {
+                        "error": {
+                          "type": "SmtpError",
+                          "message": "client: Connection closed"
+                        }
+                      },
+                      "syntax": {
+                        "domain": "gmail.com",
+                        "is_valid_syntax": true,
+                        "username": "test"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post-check-email",
+        "description": "Perform a full verification of an email address.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Object containing parameters for the email verification.",
+                "properties": {
+                  "to_email": {
+                    "type": "string",
+                    "description": "The email address to check.",
+                    "format": "email",
+                    "example": "test@gmail.com"
+                  },
+                  "from_email": {
+                    "type": "string",
+                    "description": "In the SMTP connection, the FROM email address.",
+                    "format": "email",
+                    "default": "user@example.org"
+                  },
+                  "hello_name": {
+                    "type": "string",
+                    "description": "In the SMTP connection, the EHLO hostname.",
+                    "format": "hostname",
+                    "default": "example.org"
+                  }
+                },
+                "required": [
+                  "to_email"
+                ]
+              }
+            }
+          },
+          "description": "Object containing parameters for the email verification."
+        },
+        "parameters": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CheckEmailOutput": {
+        "title": "CheckEmailOutput",
+        "type": "object",
+        "x-examples": {
+          "Example with test@gmail.com": {
+            "input": "test@gmail.com",
+            "misc": {
+              "is_disposable": false
+            },
+            "mx": {
+              "accepts_mail": true,
+              "records": [
+                "alt4.gmail-smtp-in.l.google.com.",
+                "alt2.gmail-smtp-in.l.google.com.",
+                "alt3.gmail-smtp-in.l.google.com.",
+                "gmail-smtp-in.l.google.com.",
+                "alt1.gmail-smtp-in.l.google.com."
+              ]
+            },
+            "smtp": {
+              "can_connect_smtp": true,
+              "has_full_inbox": false,
+              "is_catch_all": false,
+              "is_deliverable": false,
+              "is_disabled": false
+            },
+            "syntax": {
+              "domain": "gmail.com",
+              "is_valid_syntax": true,
+              "username": "test"
+            }
+          }
+        },
+        "description": "The verification result of an email.",
+        "properties": {
+          "input": {
+            "type": "string",
+            "format": "email",
+            "description": "The input email address."
+          },
+          "misc": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MiscDetails"
+              },
+              {
+                "$ref": "#/components/schemas/Error"
+              }
+            ],
+            "description": "Miscellaneous information about the email account."
+          },
+          "mx": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MxDetails"
+              },
+              {
+                "$ref": "#/components/schemas/Error"
+              }
+            ],
+            "description": "Information gathered from querying the MX records of the mail server."
+          },
+          "smtp": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SmtpDetails"
+              },
+              {
+                "$ref": "#/components/schemas/Error"
+              }
+            ],
+            "description": "Verifications performed by connecting to the mail server via SMTP."
+          },
+          "syntax": {
+            "$ref": "#/components/schemas/SyntaxDetails"
+          }
+        },
+        "required": [
+          "input",
+          "misc",
+          "mx",
+          "smtp",
+          "syntax"
+        ]
+      },
+      "Error": {
+        "title": "Error",
+        "type": "object",
+        "description": "Object describing an error happening during the misc, MX, or SMTP verifications.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "MiscError"
+            ],
+            "description": "Generic error type."
+          },
+          "message": {
+            "type": "string",
+            "description": "A human-readable description of the error."
+          }
+        },
+        "required": [
+          "type",
+          "message"
+        ]
+      },
+      "MiscDetails": {
+        "title": "MiscDetails",
+        "type": "object",
+        "description": "Miscellaneous information about the email account.",
+        "properties": {
+          "is_disposable": {
+            "type": "boolean",
+            "description": "Is the address provided by a known disposable email address provider?"
+          }
+        },
+        "required": [
+          "is_disposable"
+        ]
+      },
+      "MxDetails": {
+        "title": "MxDetails",
+        "type": "object",
+        "properties": {
+          "accepts_mail": {
+            "type": "boolean",
+            "description": "Does the server accept mails?"
+          },
+          "records": {
+            "type": "array",
+            "description": "The list of FQDN (Fully Qualified Domain Names) of the mail server.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accepts_mail",
+          "records"
+        ],
+        "description": "Object holding the MX details of the mail server."
+      },
+      "SmtpDetails": {
+        "title": "SmtpDetails",
+        "type": "object",
+        "description": "Verifications performed by connecting to the mail server via SMTP.",
+        "properties": {
+          "can_connect_smtp": {
+            "type": "boolean",
+            "description": "Can the mail exchanger of the email address domain be contacted successfully?"
+          },
+          "has_full_inbox": {
+            "type": "boolean",
+            "description": "Is the inbox of this mailbox full?"
+          },
+          "is_catch_all": {
+            "type": "boolean",
+            "description": "Is this email address a catch-all address?"
+          },
+          "is_deliverable": {
+            "type": "boolean",
+            "description": "Is an email sent to this address deliverable?"
+          },
+          "is_disabled": {
+            "type": "boolean",
+            "description": "Has this email address been disabled by the email provider?"
+          }
+        },
+        "required": [
+          "can_connect_smtp",
+          "has_full_inbox",
+          "is_catch_all",
+          "is_deliverable",
+          "is_disabled"
+        ]
+      },
+      "SyntaxDetails": {
+        "title": "SyntaxDetails",
+        "type": "object",
+        "description": "Syntax validation of an email address.",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain name of the email, i.e. the part after the \"@\" symbol."
+          },
+          "is_valid_syntax": {
+            "type": "boolean",
+            "description": "Is the address syntactically valid?"
+          },
+          "username": {
+            "type": "string",
+            "description": "The username of the email, i.e. the part before the \"@\" symbol."
+          }
+        },
+        "required": [
+          "domain",
+          "is_valid_syntax",
+          "username"
+        ]
+      }
+    },
+    "securitySchemes": {}
+  }
 }
