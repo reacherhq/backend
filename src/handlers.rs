@@ -61,8 +61,10 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	// Create EmailInput for check_if_email_exists from body
 	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
-		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
-		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
+		.from_email(body.from_email.unwrap_or_else(|| {
+			env::var("RCH_FROM_EMAIL").expect("You must set a RCH_FROM_EMAIL env var.")
+		}))
+		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
 	// If relevant ENV vars are set, we proxy.
 	if let (Ok(proxy_host), Ok(proxy_port)) =
