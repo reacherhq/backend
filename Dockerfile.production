@@ -2,7 +2,7 @@ FROM alpine:latest
 
 WORKDIR /reacher
 
-ENV REACHER_VERSION 0.1.6
+ENV REACHER_VERSION 0.1.7
 # Environment variables for Tor proxying in Reacher
 ENV RCH_PROXY_HOST = 127.0.0.1
 ENV RCH_PROXY_PORT = 9050
