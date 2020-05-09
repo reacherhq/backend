@@ -17,7 +17,7 @@
 use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
 use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, convert::Infallible, env};
+use std::{borrow::Cow, collections::BTreeMap, convert::Infallible, env};
 use warp::http::StatusCode;
 
 /// JSON Request from POST /check_email
@@ -38,13 +38,14 @@ fn log_error(
 
 	let mut extra = BTreeMap::new();
 	extra.insert(
-		"CheckEmailInput".into(),
+		"CheckEmailOutput".into(),
 		Value::String(format!("{:#?}", result)),
 	);
 
 	sentry::capture_event(Event {
 		extra,
 		message: Some(message),
+		release: env::var("CARGO_PKG_VERSION").ok().map(Cow::from),
 		..Default::default()
 	});
 
