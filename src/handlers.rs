@@ -17,7 +17,7 @@
 use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
 use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, convert::Infallible, env};
+use std::{borrow::Cow, collections::BTreeMap, convert::Infallible, env};
 use warp::http::StatusCode;
 
 /// JSON Request from POST /check_email
@@ -38,13 +38,14 @@ fn log_error(
 
 	let mut extra = BTreeMap::new();
 	extra.insert(
-		"CheckEmailInput".into(),
+		"CheckEmailOutput".into(),
 		Value::String(format!("{:#?}", result)),
 	);
 
 	sentry::capture_event(Event {
 		extra,
 		message: Some(message),
+		release: env::var("CARGO_PKG_VERSION").ok().map(Cow::from),
 		..Default::default()
 	});
 
@@ -61,8 +62,10 @@ pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallibl
 	// Create EmailInput for check_if_email_exists from body
 	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
-		.from_email(body.from_email.unwrap_or_else(|| "user@example.org".into()))
-		.hello_name(body.hello_name.unwrap_or_else(|| "example.org".into()));
+		.from_email(body.from_email.unwrap_or_else(|| {
+			env::var("RCH_FROM_EMAIL").expect("You must set a RCH_FROM_EMAIL env var.")
+		}))
+		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
 	// If relevant ENV vars are set, we proxy.
 	if let (Ok(proxy_host), Ok(proxy_port)) =
