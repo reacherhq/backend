@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.8](https://github.com/reacherhq/backend/compare/v0.1.7...v0.1.8) (2020-05-09)
+
+
+### Features
+
+* Use custom FROM email, defined in env ([#49](https://github.com/reacherhq/backend/issues/49)) ([ea31e4a](https://github.com/reacherhq/backend/commit/ea31e4abbe7e86860fbc28a4627d826afcb2b1af)), closes [#48](https://github.com/reacherhq/backend/issues/48)
+
 ### [0.1.7](https://github.com/reacherhq/backend/compare/v0.1.6...v0.1.7) (2020-05-09)
 
 
