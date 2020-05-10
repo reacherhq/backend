@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.9](https://github.com/reacherhq/backend/compare/v0.1.8...v0.1.9) (2020-05-10)
+
+
+### Features
+
+* Add x-saasify-secret verification & retry mechanism ([#51](https://github.com/reacherhq/backend/issues/51)) ([5767e1e](https://github.com/reacherhq/backend/commit/5767e1e32497d6535ac5794a1afffbfe1cc60b05)), closes [#46](https://github.com/reacherhq/backend/issues/46) [#44](https://github.com/reacherhq/backend/issues/44)
+
+
+### Bug Fixes
+
+* Fix dockerfiles ENV ([#52](https://github.com/reacherhq/backend/issues/52)) ([c2cd1f4](https://github.com/reacherhq/backend/commit/c2cd1f42bd3d01359da9987441e05b992bdbf15c))
+
 ### [0.1.8](https://github.com/reacherhq/backend/compare/v0.1.7...v0.1.8) (2020-05-09)
 
 
