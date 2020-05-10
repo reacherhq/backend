@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.10](https://github.com/reacherhq/backend/compare/v0.1.9...v0.1.10) (2020-05-10)
+
+
+### Bug Fixes
+
+* Put correct SAASIFY_SECRET_HEADER ([#53](https://github.com/reacherhq/backend/issues/53)) ([21d0417](https://github.com/reacherhq/backend/commit/21d0417817b4c394d67ff1dd1cc48e6c8a7f50d8))
+
 ### [0.1.9](https://github.com/reacherhq/backend/compare/v0.1.8...v0.1.9) (2020-05-10)
 
 
