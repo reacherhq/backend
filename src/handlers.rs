@@ -58,12 +58,12 @@ fn log_error(
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
-pub async fn check_email(body: EmailInput) -> Result<impl warp::Reply, Infallible> {
+pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, Infallible> {
 	// Create EmailInput for check_if_email_exists from body
 	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
 		.from_email(body.from_email.unwrap_or_else(|| {
-			env::var("RCH_FROM_EMAIL").expect("You must set a RCH_FROM_EMAIL env var.")
+			env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
 		}))
 		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 

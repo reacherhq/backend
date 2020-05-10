@@ -286,8 +286,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "check-if-email-exists"
 version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b560071c907eb32f0d9887f4b0e42b3c75eb32083c2df26396aaabf81d43265"
+source = "git+https://github.com/amaurymartiny/check-if-email-exists#f5392d4befcee6e4d935e1585066eae3b57ec6fa"
 dependencies = [
  "amaurymartiny-async-smtp",
  "fast-socks5",
@@ -1779,7 +1778,7 @@ dependencies = [
 
 [[package]]
 name = "reacher"
-version = "0.1.7"
+version = "0.1.9"
 dependencies = [
  "check-if-email-exists",
  "env_logger 0.7.1",
