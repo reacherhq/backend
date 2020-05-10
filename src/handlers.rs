@@ -73,9 +73,7 @@ async fn retry(input: &CheckEmailInput, count: u8) -> CheckEmailOutput {
 
 	// We retry if at least one of the misc, mx or smtp fields contains an
 	// error.
-	if result.misc.is_ok() && result.mx.is_ok() && result.smtp.is_ok() {
-		result
-	} else if count <= 1 {
+	if count <= 1 || (result.misc.is_ok() && result.mx.is_ok() && result.smtp.is_ok()) {
 		result
 	} else {
 		retry(input, count - 1).await
