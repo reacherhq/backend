@@ -1785,6 +1785,7 @@ dependencies = [
  "log 0.4.8",
  "sentry",
  "serde",
+ "serde_json",
  "tokio 0.2.20",
  "warp",
 ]

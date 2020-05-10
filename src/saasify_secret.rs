@@ -25,15 +25,16 @@ impl warp::reject::Reject for IncorrectSaasifySecret {}
 pub fn check_saasify_secret() -> impl warp::Filter<Extract = ((),), Error = warp::Rejection> + Clone
 {
 	warp::header::<String>("x-saasify-secret").and_then(|header: String| async move {
-		if let Ok(saasify_secret) = env::var("RCH_SAASIFY_SECRET") {
-			if !header
-				.as_bytes()
-				.eq_ignore_ascii_case(saasify_secret.as_bytes())
-			{
-				return Err(warp::reject::custom(IncorrectSaasifySecret {}));
-			}
-		}
+		let saasify_secret =
+			env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into());
 
-		Ok(())
+		if header
+			.as_bytes()
+			.eq_ignore_ascii_case(saasify_secret.as_bytes())
+		{
+			Ok(())
+		} else {
+			Err(warp::reject::custom(IncorrectSaasifySecret {}))
+		}
 	})
 }

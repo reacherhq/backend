@@ -81,13 +81,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 #[cfg(test)]
 mod tests {
+	use serde_json;
 	use warp::http::StatusCode;
 	use warp::test::request;
 
-	use super::create_api;
+	use super::{create_api, handlers::EmailInput};
 
 	#[tokio::test]
-	async fn test_saasify_secret() {
+	async fn test_missing_saasify_secret() {
 		let resp = request()
 			.path("/check_email")
 			.method("POST")
@@ -98,6 +99,55 @@ mod tests {
 		assert_eq!(
 			resp.body(),
 			"Missing request header \"x-saasify-secret\"".as_bytes()
+		);
+	}
+	#[tokio::test]
+	async fn test_incorrect_saasify_secret() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.header("x-saasify-secret", "incorrect")
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+		assert_eq!(
+			resp.body(),
+			"Unhandled rejection: IncorrectSaasifySecret".as_bytes()
+		);
+	}
+
+	#[tokio::test]
+	async fn test_input_foo_bar() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.header("x-saasify-secret", "reacher_dev_secret")
+			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::OK);
+		assert_eq!(
+			resp.body(),
+			r#"{"input":"foo@bar","misc":{"is_disposable":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":null,"domain":"","is_valid_syntax":false,"username":""}}"#.as_bytes()
+		);
+	}
+
+	#[tokio::test]
+	async fn test_input_foo_bar_baz() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.header("x-saasify-secret", "reacher_dev_secret")
+			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::OK);
+		assert_eq!(
+			resp.body(),
+			r#"{"input":"foo@bar.baz","misc":{"is_disposable":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#.as_bytes()
 		);
 	}
 }
