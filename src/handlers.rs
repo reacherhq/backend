@@ -83,7 +83,7 @@ async fn retry(input: &CheckEmailInput, count: u8) -> CheckEmailOutput {
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
-pub async fn check_email(_: (), _: (), body: EmailInput) -> Result<impl warp::Reply, Infallible> {
+pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, Infallible> {
 	// Create EmailInput for check_if_email_exists from body
 	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
