@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
+use async_recursion::async_recursion;
 use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
 use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
@@ -55,6 +56,32 @@ fn log_error(
 	))
 }
 
+/// A recursive async function to retry the `ciee_check_email` function
+/// multiple times.
+///
+/// # Panics
+///
+/// The `input.to_emails` field is assumed to contain exactly email address to
+/// check. The function will panic if this field is empty. If it contains more
+/// than 1 field, subsequent emails will be ignored.
+#[async_recursion]
+async fn retry(input: &CheckEmailInput, count: u8) -> CheckEmailOutput {
+	let result = ciee_check_email(input)
+		.await
+		.pop()
+		.expect("The input has one element, so does the output. qed.");
+
+	// We retry if at least one of the misc, mx or smtp fields contains an
+	// error.
+	if result.misc.is_ok() && result.mx.is_ok() && result.smtp.is_ok() {
+		result
+	} else if count <= 1 {
+		result
+	} else {
+		retry(input, count - 1).await
+	}
+}
+
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
@@ -76,10 +103,8 @@ pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, In
 		}
 	}
 
-	let mut result = ciee_check_email(&input).await;
-	let result = result
-		.pop()
-		.expect("The input has one element, so does the output. qed.");
+	// Run `ciee_check_email` function 3 times max.
+	let result = retry(&input, 3).await;
 
 	// We consider `email_exists` failed if at least one of the misc, mx or smtp
 	// fields contains an error.
