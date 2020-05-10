@@ -26,6 +26,7 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 	// POST /check_email
 	warp::path("check_email")
 		.and(warp::post())
+		.and(warp::header::headers_cloned().map(|headers| println!("{:?}", headers)))
 		// FIXME We should be able to just use warp::header::exact, and remove
 		// completely `./saasify_secret.rs`.
 		// https://github.com/seanmonstar/warp/issues/503
