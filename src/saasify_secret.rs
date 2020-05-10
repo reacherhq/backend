@@ -22,9 +22,11 @@ struct IncorrectSaasifySecret {}
 
 impl warp::reject::Reject for IncorrectSaasifySecret {}
 
+pub const SAASIFY_SECRET_HEADER: &str = "x-saasify-proxy-secret";
+
 pub fn check_saasify_secret() -> impl warp::Filter<Extract = ((),), Error = warp::Rejection> + Clone
 {
-	warp::header::<String>("x-saasify-secret").and_then(|header: String| async move {
+	warp::header::<String>(SAASIFY_SECRET_HEADER).and_then(|header: String| async move {
 		let saasify_secret =
 			env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into());
 

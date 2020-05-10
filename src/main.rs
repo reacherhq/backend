@@ -85,7 +85,7 @@ mod tests {
 	use warp::http::StatusCode;
 	use warp::test::request;
 
-	use super::{create_api, handlers::EmailInput};
+	use super::{create_api, handlers::EmailInput, saasify_secret::SAASIFY_SECRET_HEADER};
 
 	#[tokio::test]
 	async fn test_missing_saasify_secret() {
@@ -98,7 +98,7 @@ mod tests {
 		assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 		assert_eq!(
 			resp.body(),
-			"Missing request header \"x-saasify-secret\"".as_bytes()
+			"Missing request header \"x-saasify-proxy-secret\"".as_bytes()
 		);
 	}
 	#[tokio::test]
@@ -106,7 +106,7 @@ mod tests {
 		let resp = request()
 			.path("/check_email")
 			.method("POST")
-			.header("x-saasify-secret", "incorrect")
+			.header(SAASIFY_SECRET_HEADER, "incorrect")
 			.reply(&create_api())
 			.await;
 
@@ -122,7 +122,7 @@ mod tests {
 		let resp = request()
 			.path("/check_email")
 			.method("POST")
-			.header("x-saasify-secret", "reacher_dev_secret")
+			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
 			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
 			.reply(&create_api())
 			.await;
@@ -139,7 +139,7 @@ mod tests {
 		let resp = request()
 			.path("/check_email")
 			.method("POST")
-			.header("x-saasify-secret", "reacher_dev_secret")
+			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
 			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 			.reply(&create_api())
 			.await;
