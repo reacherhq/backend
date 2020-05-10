@@ -73,6 +73,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-recursion"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "394b41acee32ce53306b9abfa8ad4df10b73b3c003e5c5da4720cca722010878"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-std"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,8 +297,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "check-if-email-exists"
 version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b560071c907eb32f0d9887f4b0e42b3c75eb32083c2df26396aaabf81d43265"
+source = "git+https://github.com/amaurymartiny/check-if-email-exists#f5392d4befcee6e4d935e1585066eae3b57ec6fa"
 dependencies = [
  "amaurymartiny-async-smtp",
  "fast-socks5",
@@ -1779,13 +1789,15 @@ dependencies = [
 
 [[package]]
 name = "reacher"
-version = "0.1.7"
+version = "0.1.9"
 dependencies = [
+ "async-recursion",
  "check-if-email-exists",
  "env_logger 0.7.1",
  "log 0.4.8",
  "sentry",
  "serde",
+ "serde_json",
  "tokio 0.2.20",
  "warp",
 ]

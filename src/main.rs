@@ -15,11 +15,39 @@
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
 mod handlers;
+mod saasify_secret;
 
-use std::env;
+use saasify_secret::check_saasify_secret;
+use std::{env, net::IpAddr};
 use warp::Filter;
 
+/// Create all the endpoints of our API.
+fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	// POST /check_email
+	warp::path("check_email")
+		.and(warp::post())
+		// FIXME We should be able to just use warp::header::exact, and remove
+		// completely `./saasify_secret.rs`.
+		// https://github.com/seanmonstar/warp/issues/503
+		.and(check_saasify_secret())
+		// When accepting a body, we want a JSON body (and to reject huge
+		// payloads)...
+		.and(warp::body::content_length_limit(1024 * 16))
+		.and(warp::body::json())
+		.and_then(handlers::check_email)
+		// View access logs by setting `RUST_LOG=reacher`.
+		.with(warp::log("reacher"))
+}
+
 /// Run a HTTP server using warp.
+///
+/// # Panics
+///
+/// If at least one of the environment variables:
+/// - RCH_HTTP_HOST
+/// - RCH_PROXY_HOST
+/// - RCH_PROXY_PORT
+/// is malformed, then the program will panic.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
@@ -33,21 +61,93 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		log::info!(target: "reacher", "Sentry is successfully set up.")
 	}
 
-	// POST /check_email
-	let routes = warp::post()
-		.and(warp::path("check_email"))
-		// When accepting a body, we want a JSON body (and to reject huge
-		// payloads)...
-		.and(warp::body::content_length_limit(1024 * 16))
-		.and(warp::body::json())
-		.and_then(handlers::check_email)
-		// View access logs by setting `RUST_LOG=reacher`.
-		.with(warp::log("reacher"));
+	let api = create_api();
 
 	log::info!(target: "reacher", "Server is listening on :8080.");
 
 	// Since we're running the HTTP server inside a Docker container, we
 	// use 0.0.0.0. The port is 8080 as per Fly documentation.
-	warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
+	warp::serve(api)
+		.run((
+			env::var("RCH_HTTP_HOST")
+				.unwrap_or_else(|_| "127.0.0.1".into())
+				.parse::<IpAddr>()
+				.expect("RCH_HTTP_HOST is malformed."),
+			8080,
+		))
+		.await;
 	Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+	use serde_json;
+	use warp::http::StatusCode;
+	use warp::test::request;
+
+	use super::{create_api, handlers::EmailInput};
+
+	#[tokio::test]
+	async fn test_missing_saasify_secret() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+		assert_eq!(
+			resp.body(),
+			"Missing request header \"x-saasify-secret\"".as_bytes()
+		);
+	}
+	#[tokio::test]
+	async fn test_incorrect_saasify_secret() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.header("x-saasify-secret", "incorrect")
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+		assert_eq!(
+			resp.body(),
+			"Unhandled rejection: IncorrectSaasifySecret".as_bytes()
+		);
+	}
+
+	#[tokio::test]
+	async fn test_input_foo_bar() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.header("x-saasify-secret", "reacher_dev_secret")
+			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::OK);
+		assert_eq!(
+			resp.body(),
+			r#"{"input":"foo@bar","misc":{"is_disposable":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":null,"domain":"","is_valid_syntax":false,"username":""}}"#.as_bytes()
+		);
+	}
+
+	#[tokio::test]
+	async fn test_input_foo_bar_baz() {
+		let resp = request()
+			.path("/check_email")
+			.method("POST")
+			.header("x-saasify-secret", "reacher_dev_secret")
+			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
+			.reply(&create_api())
+			.await;
+
+		assert_eq!(resp.status(), StatusCode::OK);
+		assert_eq!(
+			resp.body(),
+			r#"{"input":"foo@bar.baz","misc":{"is_disposable":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#.as_bytes()
+		);
+	}
 }
