@@ -297,7 +297,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "check-if-email-exists"
 version = "0.8.1"
-source = "git+https://github.com/amaurymartiny/check-if-email-exists#f5392d4befcee6e4d935e1585066eae3b57ec6fa"
+source = "git+https://github.com/amaurymartiny/check-if-email-exists#eaec74d4474656e60726508e9c5e8363c99036f7"
 dependencies = [
  "amaurymartiny-async-smtp",
  "fast-socks5",
