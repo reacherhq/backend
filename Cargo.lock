@@ -74,9 +74,9 @@ dependencies = [
 
 [[package]]
 name = "async-recursion"
-version = "0.2.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "394b41acee32ce53306b9abfa8ad4df10b73b3c003e5c5da4720cca722010878"
+checksum = "e5444eec77a9ec2bfe4524139e09195862e981400c4358d3b760cae634e4c4ee"
 dependencies = [
  "proc-macro2",
  "quote",
