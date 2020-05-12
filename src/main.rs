@@ -15,7 +15,6 @@
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
 mod handlers;
-mod saasify_secret;
 
 use saasify_secret::check_saasify_secret;
 use std::{env, net::IpAddr};
@@ -26,10 +25,6 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 	// POST /check_email
 	warp::path("check_email")
 		.and(warp::post())
-		// FIXME We should be able to just use warp::header::exact, and remove
-		// completely `./saasify_secret.rs`.
-		// https://github.com/seanmonstar/warp/issues/503
-		.and(check_saasify_secret())
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		.and(warp::body::content_length_limit(1024 * 16))
