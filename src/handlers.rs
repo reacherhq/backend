@@ -15,7 +15,9 @@
 // along with Reacher.  If not, see <http://www.gnu.org/licenses/>.
 
 use async_recursion::async_recursion;
-use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
+use check_if_email_exists::{
+	check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput, Reachable,
+};
 use sentry::protocol::{Event, Value};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::BTreeMap, convert::Infallible, env};
@@ -30,13 +32,8 @@ pub struct EmailInput {
 }
 
 /// Helper function to send an event to Sentry, in case our check_email
-/// function fails, and return a 500 error response.
-fn log_error(
-	message: String,
-	result: CheckEmailOutput,
-) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible> {
-	let json = warp::reply::json(&result);
-
+/// function fails.
+fn log_error(message: String, result: &CheckEmailOutput) -> () {
 	let mut extra = BTreeMap::new();
 	extra.insert(
 		"CheckEmailOutput".into(),
@@ -49,11 +46,6 @@ fn log_error(
 		release: env::var("CARGO_PKG_VERSION").ok().map(Cow::from),
 		..Default::default()
 	});
-
-	Ok(warp::reply::with_status(
-		json,
-		StatusCode::INTERNAL_SERVER_ERROR,
-	))
 }
 
 /// A recursive async function to retry the `ciee_check_email` function
@@ -71,9 +63,8 @@ async fn retry(input: &CheckEmailInput, count: u8) -> CheckEmailOutput {
 		.pop()
 		.expect("The input has one element, so does the output. qed.");
 
-	// We retry if at least one of the misc, mx or smtp fields contains an
-	// error.
-	if count <= 1 || (result.misc.is_ok() && result.mx.is_ok() && result.smtp.is_ok()) {
+	// We retry if the reachability was unknown.
+	if count <= 1 || result.is_reachable != Reachable::Unknown {
 		result
 	} else {
 		retry(input, count - 1).await
@@ -104,15 +95,16 @@ pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, In
 	// Run `ciee_check_email` function 3 times max.
 	let result = retry(&input, 3).await;
 
-	// We consider `email_exists` failed if at least one of the misc, mx or smtp
-	// fields contains an error.
+	// We log the errors to Sentry, to be able to debug them better.
 	match (&result.misc, &result.mx, &result.smtp) {
-		(Err(error), _, _) => log_error(format!("{:?}", error), result),
-		(_, Err(error), _) => log_error(format!("{:?}", error), result),
-		(_, _, Err(error)) => log_error(format!("{:?}", error), result),
-		_ => Ok(warp::reply::with_status(
-			warp::reply::json(&result),
-			StatusCode::OK,
-		)),
-	}
+		(Err(error), _, _) => log_error(format!("{:?}", error), &result),
+		(_, Err(error), _) => log_error(format!("{:?}", error), &result),
+		(_, _, Err(error)) => log_error(format!("{:?}", error), &result),
+		_ => (),
+	};
+
+	Ok(warp::reply::with_status(
+		warp::reply::json(&result),
+		StatusCode::OK,
+	))
 }
