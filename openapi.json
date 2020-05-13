@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Reacher",
-    "version": "0.1",
+    "version": "0.2",
     "description": "Reacher backend OpenAPIv3 specification.",
     "license": {
       "name": "GPL-3.0",
@@ -35,8 +35,10 @@
                   "Example with test@gmail.com": {
                     "value": {
                       "input": "test@gmail.com",
+                      "is_reachable": "invalid",
                       "misc": {
-                        "is_disposable": false
+                        "is_disposable": false,
+                        "is_role_account": true
                       },
                       "mx": {
                         "accepts_mail": true,
@@ -54,47 +56,6 @@
                         "is_catch_all": false,
                         "is_deliverable": false,
                         "is_disabled": false
-                      },
-                      "syntax": {
-                        "domain": "gmail.com",
-                        "is_valid_syntax": true,
-                        "username": "test"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. This may seldom happen when the MX or SMTP verifications fail. The error is described in the `mx` or `smtp` fields of the JSON body.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckEmailOutput"
-                },
-                "examples": {
-                  "Example with test@gmail.com": {
-                    "value": {
-                      "input": "test@gmail.com",
-                      "misc": {
-                        "is_disposable": false
-                      },
-                      "mx": {
-                        "accepts_mail": true,
-                        "records": [
-                          "alt2.gmail-smtp-in.l.google.com.",
-                          "alt1.gmail-smtp-in.l.google.com.",
-                          "alt3.gmail-smtp-in.l.google.com.",
-                          "gmail-smtp-in.l.google.com.",
-                          "alt4.gmail-smtp-in.l.google.com."
-                        ]
-                      },
-                      "smtp": {
-                        "error": {
-                          "type": "SmtpError",
-                          "message": "client: Connection closed"
-                        }
                       },
                       "syntax": {
                         "domain": "gmail.com",
@@ -154,8 +115,10 @@
         "x-examples": {
           "Example with test@gmail.com": {
             "input": "test@gmail.com",
+            "is_reachable": "invalid",
             "misc": {
-              "is_disposable": false
+              "is_disposable": false,
+              "is_role_account": true
             },
             "mx": {
               "accepts_mail": true,
@@ -187,6 +150,9 @@
             "type": "string",
             "format": "email",
             "description": "The input email address."
+          },
+          "is_reachable": {
+            "$ref": "#/components/schemas/Reachable"
           },
           "misc": {
             "oneOf": [
@@ -230,7 +196,8 @@
           "misc",
           "mx",
           "smtp",
-          "syntax"
+          "syntax",
+          "is_reachable"
         ]
       },
       "Error": {
@@ -263,10 +230,15 @@
           "is_disposable": {
             "type": "boolean",
             "description": "Is the address provided by a known disposable email address provider?"
+          },
+          "is_role_account": {
+            "type": "boolean",
+            "description": "Is this email a role-based account?"
           }
         },
         "required": [
-          "is_disposable"
+          "is_disposable",
+          "is_role_account"
         ]
       },
       "MxDetails": {
@@ -348,6 +320,17 @@
           "is_valid_syntax",
           "username"
         ]
+      },
+      "Reachable": {
+        "type": "string",
+        "title": "Reachable",
+        "enum": [
+          "invalid",
+          "unknown",
+          "safe",
+          "risky"
+        ],
+        "description": "An enum to describe how confident we are that the recipient address is real."
       }
     },
     "securitySchemes": {}
