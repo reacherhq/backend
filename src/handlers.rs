@@ -33,7 +33,7 @@ pub struct EmailInput {
 
 /// Helper function to send an event to Sentry, in case our check_email
 /// function fails.
-fn log_error(message: String, result: &CheckEmailOutput) -> () {
+fn log_error(message: String, result: &CheckEmailOutput) {
 	let mut extra = BTreeMap::new();
 	extra.insert(
 		"CheckEmailOutput".into(),
