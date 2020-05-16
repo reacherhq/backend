@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/reacherhq/backend/compare/v0.1.10...v0.2.0) (2020-05-16)
+
+
+### Features
+
+* Add is_reachable field in json ([#63](https://github.com/reacherhq/backend/issues/63)) ([6fd5215](https://github.com/reacherhq/backend/commit/6fd5215285cf6b841d8c843857f9b9bf11940c82))
+
 ### [0.1.10](https://github.com/reacherhq/backend/compare/v0.1.9...v0.1.10) (2020-05-10)
 
 
