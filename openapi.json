@@ -5,7 +5,7 @@
     "version": "0.2",
     "description": "Reacher backend OpenAPIv3 specification.",
     "license": {
-      "name": "GPL-3.0",
+      "name": "AGPL-3.0",
       "url": "https://github.com/reacherhq/microservices/blob/master/LICENSE"
     },
     "contact": {
