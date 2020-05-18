@@ -10,7 +10,7 @@ async-recursion = "0.3"
 check-if-email-exists = "0.8"
 env_logger = "0.7"
 log = "0.4"
-sentry = "0.17"
+sentry = "0.18"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "0.2", features = ["macros"] }
 warp = "0.2"
