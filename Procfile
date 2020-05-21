@@ -1,1 +1,1 @@
-web: ./target/release/reacher --http
+web: ./target/release/reacher
