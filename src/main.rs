@@ -63,21 +63,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	let api = create_api();
 
-	log::info!(target: "reacher", "Server is listening on :8080.");
+	let host = env::var("RCH_HTTP_HOST")
+		.unwrap_or_else(|_| "127.0.0.1".into())
+		.parse::<IpAddr>()
+		.expect("Env var RCH_HTTP_HOST is malformed.");
+	let port = env::var("PORT")
+		.map(|port| port.parse::<u16>().expect("Env var PORT is malformed."))
+		.unwrap_or(8080);
+	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
 
-	// Since we're running the HTTP server inside a Docker container, we
-	// use 0.0.0.0. The port is 8080 as per Fly documentation.
-	warp::serve(api)
-		.run((
-			env::var("RCH_HTTP_HOST")
-				.unwrap_or_else(|_| "127.0.0.1".into())
-				.parse::<IpAddr>()
-				.expect("Env var RCH_HTTP_HOST is malformed."),
-			env::var("PORT")
-				.map(|port| port.parse::<u16>().expect("Env var PORT is malformed."))
-				.unwrap_or(8080),
-		))
-		.await;
+	warp::serve(api).run((host, port)).await;
 	Ok(())
 }
 
