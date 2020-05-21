@@ -73,7 +73,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 				.unwrap_or_else(|_| "127.0.0.1".into())
 				.parse::<IpAddr>()
 				.expect("RCH_HTTP_HOST is malformed."),
-			8080,
+			env::var("PORT")
+				.map(|port| port.parse::<u16>().expect("PORT is malformed."))
+				.unwrap_or(8080),
 		))
 		.await;
 	Ok(())
