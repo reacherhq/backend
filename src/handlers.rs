@@ -15,10 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use async_recursion::async_recursion;
+use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
-	check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput, Reachable,
+	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
-use sentry::protocol::{Event, Value};
+use sentry::protocol::Event;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::BTreeMap, convert::Infallible, env};
 use warp::http::StatusCode;
@@ -35,21 +36,26 @@ pub struct EmailInput {
 /// function fails.
 fn log_error(message: String, result: &CheckEmailOutput) {
 	let mut extra = BTreeMap::new();
-	extra.insert(
-		"CheckEmailOutput".into(),
-		Value::String(format!("{:#?}", result)),
-	);
+	extra.insert("CheckEmailOutput".into(), format!("{:#?}", result).into());
+	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
+		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
+	}
+	if let Ok(cargo_pkg_version) = env::var("CARGO_PKG_VERSION") {
+		extra.insert("CARGO_PKG_VERSION".into(), cargo_pkg_version.into());
+	}
 
 	sentry::capture_event(Event {
 		extra,
 		message: Some(message),
+		// FIXME It seams that this doesn't work on Sentry, so I added it in
+		// the `extra` field above too.
 		release: env::var("CARGO_PKG_VERSION").ok().map(Cow::from),
 		..Default::default()
 	});
 }
 
 /// A recursive async function to retry the `ciee_check_email` function
-/// multiple times.
+/// multiple times, with or without proxy.
 ///
 /// # Panics
 ///
@@ -57,8 +63,27 @@ fn log_error(message: String, result: &CheckEmailOutput) {
 /// check. The function will panic if this field is empty. If it contains more
 /// than 1 field, subsequent emails will be ignored.
 #[async_recursion]
-async fn retry(input: &CheckEmailInput, count: u8) -> CheckEmailOutput {
-	let result = ciee_check_email(input)
+async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmailOutput {
+	// We create a local copy of `input`, because we might mutate it for this
+	// iteration of the retry process (depending on whether we use Tor or not).
+	let mut local_input = input.clone();
+
+	log::debug!(target: "reacher", "Retry #{} for {}", count, local_input.to_emails[0]);
+
+	// If `with_proxy` and relevant ENV vars are set, we proxy.
+	if let (true, Ok(proxy_host), Ok(proxy_port)) = (
+		with_proxy,
+		env::var("RCH_PROXY_HOST"),
+		env::var("RCH_PROXY_PORT"),
+	) {
+		if let Ok(proxy_port) = proxy_port.parse::<u16>() {
+			log::debug!(target: "reacher", "Using with_proxy: true");
+			// TODO check syntax array
+			local_input.proxy(proxy_host, proxy_port);
+		}
+	}
+
+	let result = ciee_check_email(&local_input)
 		.await
 		.pop()
 		.expect("The input has one element, so does the output. qed.");
@@ -67,7 +92,43 @@ async fn retry(input: &CheckEmailInput, count: u8) -> CheckEmailOutput {
 	if count <= 1 || result.is_reachable != Reachable::Unknown {
 		result
 	} else {
-		retry(input, count - 1).await
+		match result.smtp {
+			Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response)))
+				if (
+					// Unable to add <email> because host 23.129.64.184 is listed on zen.spamhaus.org
+					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
+					response.message[0].to_lowercase().contains("spamhaus") ||
+					// 5.7.606 Access denied, banned sending IP [23.129.64.216]
+					response.message[0].to_lowercase().contains("banned") ||
+					// Blocked - see https://ipcheck.proofpoint.com/?ip=23.129.64.192
+					// 5.7.1 Mail from 23.129.64.183 has been blocked by Trend Micro Email Reputation Service.
+					response.message[0].to_lowercase().contains("blocked") ||
+					// 5.7.1 Client host rejected: cannot find your reverse hostname, [23.129.64.184]
+					response.message[0].to_lowercase().contains("cannot find your reverse hostname")
+				) =>
+			{
+				log::debug!(target: "reacher", "{}", response.message[0]);
+				// Retry without Tor.
+				retry(input, count - 1, false).await
+			}
+			Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response)))
+				if (
+					// relay not permitted!
+					response.message[0]
+						.to_lowercase()
+						.contains("relay not permitted")
+				) =>
+			{
+				log::debug!(target: "reacher", "{}", response.message[0]);
+				// Retry without Tor.
+				retry(input, count - 1, false).await
+			}
+			_ => {
+				log::debug!("{:?}", result.smtp);
+				// We retry, once with Tor, once without.
+				retry(input, count - 1, !with_proxy).await
+			}
+		}
 	}
 }
 
@@ -83,17 +144,8 @@ pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, In
 		}))
 		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
-	// If relevant ENV vars are set, we proxy.
-	if let (Ok(proxy_host), Ok(proxy_port)) =
-		(env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT"))
-	{
-		if let Ok(proxy_port) = proxy_port.parse::<u16>() {
-			input.proxy(proxy_host, proxy_port);
-		}
-	}
-
-	// Run `ciee_check_email` function 3 times max.
-	let result = retry(&input, 3).await;
+	// Run `ciee_check_email` function 4 times max.
+	let result = retry(input, 4, true).await;
 
 	// We log the errors to Sentry, to be able to debug them better.
 	match (&result.misc, &result.mx, &result.smtp) {
