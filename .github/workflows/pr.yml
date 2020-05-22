@@ -77,8 +77,35 @@ jobs:
           command: clippy
           args: -- -D warnings
 
+  # Build a binary with target `x86_64-unknown-linux-gnu`, put in artifacts
+  build-gnu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target=x86_64-unknown-linux-gnu
+
+      - name: Upload binary as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: reacher-gnu-${{ github.sha }}
+          path: ./target/x86_64-unknown-linux-gnu/release/reacher
+
   # Build a binary with target `x86_64-unknown-linux-musl`, put in artifacts
-  build:
+  build-musl:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -92,7 +119,7 @@ jobs:
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v1
         with:
-          name: reacher-${{ github.sha }}
+          name: reacher-musl-${{ github.sha }}
           path: ./target/x86_64-unknown-linux-musl/release/reacher
 
   # Deploy a staging release on Fly
