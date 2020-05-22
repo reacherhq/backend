@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM datadog/agent:7
 
 WORKDIR /reacher
 
