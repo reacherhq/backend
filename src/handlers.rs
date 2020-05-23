@@ -130,6 +130,8 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmai
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 				if (
+					// 4.7.1 <email>: Relay access denied
+					response.message[0].to_lowercase().contains("access denied") ||
 					// relay not permitted!
 					response.message[0].to_lowercase().contains("relay not permitted") ||
 					// 23.129.64.216 is not yet authorized to deliver mail from
