@@ -92,7 +92,7 @@ jobs:
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v1
         with:
-          name: reacher-${{ github.sha }}
+          name: reacher-musl-${{ github.sha }}
           path: ./target/x86_64-unknown-linux-musl/release/reacher
 
   # Deploy a staging release on Fly

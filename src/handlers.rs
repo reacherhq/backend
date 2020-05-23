@@ -17,7 +17,7 @@
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
-	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
+	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput,
 };
 use sentry::protocol::Event;
 use serde::{Deserialize, Serialize};
@@ -34,7 +34,9 @@ pub struct EmailInput {
 
 /// Helper function to send an event to Sentry, in case our check_email
 /// function fails.
-fn log_error(message: String, result: &CheckEmailOutput) {
+fn log_error(message: String, result: &CheckEmailOutput, with_proxy: bool) {
+	log::debug!("{}", message);
+
 	let mut extra = BTreeMap::new();
 	extra.insert("CheckEmailOutput".into(), format!("{:#?}", result).into());
 	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
@@ -43,6 +45,7 @@ fn log_error(message: String, result: &CheckEmailOutput) {
 	if let Ok(cargo_pkg_version) = env::var("CARGO_PKG_VERSION") {
 		extra.insert("CARGO_PKG_VERSION".into(), cargo_pkg_version.into());
 	}
+	extra.insert("with_proxy".into(), with_proxy.into());
 
 	sentry::capture_event(Event {
 		extra,
@@ -88,12 +91,26 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmai
 		.pop()
 		.expect("The input has one element, so does the output. qed.");
 
-	// We retry if the reachability was unknown.
-	if count <= 1 || result.is_reachable != Reachable::Unknown {
+	// We return the last fetched result, if the retry count is exhausted.
+	if count <= 1 {
 		result
 	} else {
-		match result.smtp {
-			Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response)))
+		match (&result.misc, &result.mx, &result.smtp) {
+			(Err(error), _, _) => {
+				// We log misc errors.
+				log_error(format!("{:?}", error), &result, with_proxy);
+
+				// We retry once again.
+				retry(input, count - 1, with_proxy).await
+			}
+			(_, Err(error), _) => {
+				// We log mx errors.
+				log_error(format!("{:?}", error), &result, with_proxy);
+
+				// We retry once again.
+				retry(input, count - 1, with_proxy).await
+			}
+			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
 				if (
 					// Unable to add <email> because host 23.129.64.184 is listed on zen.spamhaus.org
 					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
@@ -111,23 +128,34 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmai
 				// Retry without Tor.
 				retry(input, count - 1, false).await
 			}
-			Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response)))
+			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 				if (
+					// 4.7.1 <email>: Relay access denied
+					response.message[0].to_lowercase().contains("access denied") ||
 					// relay not permitted!
-					response.message[0]
-						.to_lowercase()
-						.contains("relay not permitted")
+					response.message[0].to_lowercase().contains("relay not permitted") ||
+					// 23.129.64.216 is not yet authorized to deliver mail from
+					response.message[0].to_lowercase().contains("not yet authorized")
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
 				// Retry without Tor.
 				retry(input, count - 1, false).await
 			}
-			_ => {
-				log::debug!("{:?}", result.smtp);
+			(_, _, Err(error)) => {
+				// If it's a SMTP error we didn't catch above, we log to
+				// Sentry, to be able to debug them better. We don't want to
+				// spam Sentry and log all instances of the error, hence the
+				// `count` check.
+				if count <= 3 {
+					log_error(format!("{:?}", error), &result, with_proxy);
+				}
+
 				// We retry, once with Tor, once without.
 				retry(input, count - 1, !with_proxy).await
 			}
+			// If everything is ok, we just return the result.
+			(Ok(_), Ok(_), Ok(_)) => result,
 		}
 	}
 }
@@ -146,14 +174,6 @@ pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, In
 
 	// Run `ciee_check_email` function 4 times max.
 	let result = retry(input, 4, true).await;
-
-	// We log the errors to Sentry, to be able to debug them better.
-	match (&result.misc, &result.mx, &result.smtp) {
-		(Err(error), _, _) => log_error(format!("{:?}", error), &result),
-		(_, Err(error), _) => log_error(format!("{:?}", error), &result),
-		(_, _, Err(error)) => log_error(format!("{:?}", error), &result),
-		_ => (),
-	};
 
 	Ok(warp::reply::with_status(
 		warp::reply::json(&result),
