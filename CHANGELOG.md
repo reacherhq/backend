@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.1](https://github.com/reacherhq/backend/compare/v0.2.0...v0.2.1) (2020-05-23)
+
+
+### Bug Fixes
+
+* Better retry mechanism, with or without Tor ([#68](https://github.com/reacherhq/backend/issues/68)) ([83fd4fe](https://github.com/reacherhq/backend/commit/83fd4fead130a1088cb23bdbc3040bd4f501efb9))
+* Improve retry mechanism and error logging ([#69](https://github.com/reacherhq/backend/issues/69)) ([791da70](https://github.com/reacherhq/backend/commit/791da70a46f8a63887397435d0cc52d7c840ece2))
+
 ## [0.2.0](https://github.com/reacherhq/backend/compare/v0.1.10...v0.2.0) (2020-05-16)
 
 
