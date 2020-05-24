@@ -16,6 +16,7 @@
 
 mod handlers;
 mod saasify_secret;
+mod sentry_util;
 
 use saasify_secret::check_saasify_secret;
 use std::{env, net::IpAddr};
