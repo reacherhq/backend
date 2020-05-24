@@ -21,8 +21,10 @@ use check_if_email_exists::{
 };
 use sentry::protocol::Event;
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, collections::BTreeMap, convert::Infallible, env};
+use std::{collections::BTreeMap, convert::Infallible, env};
 use warp::http::StatusCode;
+
+const CARGO_PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// JSON Request from POST /check_email
 #[derive(Debug, Deserialize, Serialize)]
@@ -42,9 +44,6 @@ fn log_error(message: String, result: &CheckEmailOutput, with_proxy: bool) {
 	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
 		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
 	}
-	if let Ok(cargo_pkg_version) = env::var("CARGO_PKG_VERSION") {
-		extra.insert("CARGO_PKG_VERSION".into(), cargo_pkg_version.into());
-	}
 	extra.insert("with_proxy".into(), with_proxy.into());
 
 	sentry::capture_event(Event {
@@ -52,7 +51,7 @@ fn log_error(message: String, result: &CheckEmailOutput, with_proxy: bool) {
 		message: Some(message),
 		// FIXME It seams that this doesn't work on Sentry, so I added it in
 		// the `extra` field above too.
-		release: env::var("CARGO_PKG_VERSION").ok().map(Cow::from),
+		release: Some(CARGO_PKG_VERSION.into()),
 		..Default::default()
 	});
 }
