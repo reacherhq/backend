@@ -14,17 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use super::sentry_util;
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
 	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput,
 };
-use sentry::protocol::Event;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, convert::Infallible, env};
+use std::{convert::Infallible, env, time::Instant};
 use warp::http::StatusCode;
-
-const CARGO_PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// JSON Request from POST /check_email
 #[derive(Debug, Deserialize, Serialize)]
@@ -34,30 +32,10 @@ pub struct EmailInput {
 	to_email: String,
 }
 
-/// Helper function to send an event to Sentry, in case our check_email
-/// function fails.
-fn log_error(message: String, result: &CheckEmailOutput, with_proxy: bool) {
-	log::debug!("{}", message);
-
-	let mut extra = BTreeMap::new();
-	extra.insert("CheckEmailOutput".into(), format!("{:#?}", result).into());
-	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
-		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
-	}
-	extra.insert("with_proxy".into(), with_proxy.into());
-
-	sentry::capture_event(Event {
-		extra,
-		message: Some(message),
-		// FIXME It seams that this doesn't work on Sentry, so I added it in
-		// the `extra` field above too.
-		release: Some(CARGO_PKG_VERSION.into()),
-		..Default::default()
-	});
-}
-
 /// A recursive async function to retry the `ciee_check_email` function
-/// multiple times, with or without proxy.
+/// multiple times, with or without proxy. Returns a Tuple, where the first
+/// element is the result, and the second denotes whether a proxy has been used
+/// to fet this result.
 ///
 /// # Panics
 ///
@@ -65,7 +43,7 @@ fn log_error(message: String, result: &CheckEmailOutput, with_proxy: bool) {
 /// check. The function will panic if this field is empty. If it contains more
 /// than 1 field, subsequent emails will be ignored.
 #[async_recursion]
-async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmailOutput {
+async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> (CheckEmailOutput, bool) {
 	// We create a local copy of `input`, because we might mutate it for this
 	// iteration of the retry process (depending on whether we use Tor or not).
 	let mut local_input = input.clone();
@@ -80,7 +58,6 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmai
 	) {
 		if let Ok(proxy_port) = proxy_port.parse::<u16>() {
 			log::debug!(target: "reacher", "Using with_proxy: true");
-			// TODO check syntax array
 			local_input.proxy(proxy_host, proxy_port);
 		}
 	}
@@ -92,19 +69,19 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmai
 
 	// We return the last fetched result, if the retry count is exhausted.
 	if count <= 1 {
-		result
+		(result, with_proxy)
 	} else {
 		match (&result.misc, &result.mx, &result.smtp) {
 			(Err(error), _, _) => {
 				// We log misc errors.
-				log_error(format!("{:?}", error), &result, with_proxy);
+				sentry_util::error(format!("{:?}", error), &result, with_proxy);
 
 				// We retry once again.
 				retry(input, count - 1, with_proxy).await
 			}
 			(_, Err(error), _) => {
 				// We log mx errors.
-				log_error(format!("{:?}", error), &result, with_proxy);
+				sentry_util::error(format!("{:?}", error), &result, with_proxy);
 
 				// We retry once again.
 				retry(input, count - 1, with_proxy).await
@@ -147,14 +124,14 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> CheckEmai
 				// spam Sentry and log all instances of the error, hence the
 				// `count` check.
 				if count <= 3 {
-					log_error(format!("{:?}", error), &result, with_proxy);
+					sentry_util::error(format!("{:?}", error), &result, with_proxy);
 				}
 
 				// We retry, once with Tor, once without.
 				retry(input, count - 1, !with_proxy).await
 			}
 			// If everything is ok, we just return the result.
-			(Ok(_), Ok(_), Ok(_)) => result,
+			(Ok(_), Ok(_), Ok(_)) => (result, with_proxy),
 		}
 	}
 }
@@ -171,8 +148,15 @@ pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, In
 		}))
 		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
-	// Run `ciee_check_email` function 4 times max.
-	let result = retry(input, 4, true).await;
+	// Run `ciee_check_email` function 4 times max. Also measure the
+	// verification time.
+	let now = Instant::now();
+	let (result, with_proxy) = retry(input, 4, true).await;
+	sentry_util::info(
+		format!("is_reachable={:?}", result.is_reachable),
+		with_proxy,
+		now.elapsed().as_millis(),
+	);
 
 	Ok(warp::reply::with_status(
 		warp::reply::json(&result),
