@@ -18,7 +18,7 @@ use check_if_email_exists::CheckEmailOutput;
 use sentry::protocol::{Event, Level};
 use std::{collections::BTreeMap, env};
 
-const CARGO_PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Helper function to send an Info event to Sentry.
 pub fn info(message: String, with_proxy: bool, duration: u128) {
