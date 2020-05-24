@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.2](https://github.com/reacherhq/backend/compare/v0.2.1...v0.2.2) (2020-05-24)
+
+
+### Features
+
+* Add success rate and verification time metrics ([#70](https://github.com/reacherhq/backend/issues/70)) ([911b9e1](https://github.com/reacherhq/backend/commit/911b9e1a0b7a32cac70b11b2f0af19fdc947b9de))
+
 ### [0.2.1](https://github.com/reacherhq/backend/compare/v0.2.0...v0.2.1) (2020-05-23)
 
 
