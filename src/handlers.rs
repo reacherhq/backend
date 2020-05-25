@@ -90,7 +90,8 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> (CheckEma
 				if (
 					// Unable to add <email> because host 23.129.64.184 is listed on zen.spamhaus.org
 					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
-					response.message[0].to_lowercase().contains("spamhaus") ||
+					// 5.7.1 Email cannot be delivered. Reason: Email detected as Spam by spam filters.
+					response.message[0].to_lowercase().contains("spam") ||
 					// 5.7.606 Access denied, banned sending IP [23.129.64.216]
 					response.message[0].to_lowercase().contains("banned") ||
 					// Blocked - see https://ipcheck.proofpoint.com/?ip=23.129.64.192
