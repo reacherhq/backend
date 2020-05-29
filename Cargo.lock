@@ -1997,7 +1997,6 @@ dependencies = [
  "async-smtp",
  "check-if-email-exists",
  "env_logger 0.7.1",
- "http-types",
  "log 0.4.8",
  "sentry",
  "serde",
