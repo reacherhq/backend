@@ -83,7 +83,7 @@ mod tests {
 	use warp::http::StatusCode;
 	use warp::test::request;
 
-	use super::{create_api, handlers::EmailInput, saasify_secret::SAASIFY_SECRET_HEADER};
+	use super::{create_api, handlers::ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
 
 	#[tokio::test]
 	async fn test_missing_saasify_secret() {
@@ -122,7 +122,7 @@ mod tests {
 			.path("/check_email")
 			.method("POST")
 			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
-			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
+			.json(&serde_json::from_str::<ReacherInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
 			.reply(&create_api())
 			.await;
 
@@ -139,7 +139,7 @@ mod tests {
 			.path("/check_email")
 			.method("POST")
 			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
-			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
+			.json(&serde_json::from_str::<ReacherInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 			.reply(&create_api())
 			.await;
 
