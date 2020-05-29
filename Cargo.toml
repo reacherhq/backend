@@ -10,7 +10,7 @@ async-recursion = "0.3"
 async-smtp = { version = "0.3", features = ["socks5"] }
 check-if-email-exists = "0.8"
 env_logger = "0.7"
-http_types = "2.1"
+http-types = "2.1"
 log = "0.4"
 sentry = "0.17"
 serde = { version = "1.0", features = ["derive"] }
