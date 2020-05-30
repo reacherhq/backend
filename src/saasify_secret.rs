@@ -24,11 +24,17 @@ impl warp::reject::Reject for IncorrectSaasifySecret {}
 
 pub const SAASIFY_SECRET_HEADER: &str = "x-saasify-proxy-secret";
 
+/// Get the server's Saasify secret, either from ENV, or use the fallback dev
+/// secret.
+pub fn get_saasify_secret() -> String {
+	env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into())
+}
+
+/// Warp filter to check that the Saasify header secret is correct.
 pub fn check_saasify_secret() -> impl warp::Filter<Extract = ((),), Error = warp::Rejection> + Clone
 {
 	warp::header::<String>(SAASIFY_SECRET_HEADER).and_then(|header: String| async move {
-		let saasify_secret =
-			env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into());
+		let saasify_secret = get_saasify_secret();
 
 		if header
 			.as_bytes()

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use super::saasify_secret::get_saasify_secret;
 use super::sentry_util;
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
@@ -114,7 +115,7 @@ async fn check_fly(
 			)
 			.set_header(
 				"x-saasify-proxy-secret".parse::<HeaderName>().unwrap(),
-				env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into()),
+				get_saasify_secret(),
 			)
 			.body_json(&body)
 			.expect("We made sure the body is correct. qed.")
@@ -122,7 +123,11 @@ async fn check_fly(
 			.await
 		{
 			Ok(result) => (ReacherOutput::Json(result), option),
-			Err(_) => check_fly(body, count - 1, RetryOption::Tor).await,
+			Err(err) => {
+				sentry_util::error(err.to_string(), None, option);
+
+				check_fly(body, count - 1, RetryOption::Tor).await
+			}
 		};
 	}
 
@@ -151,14 +156,14 @@ async fn check_fly(
 		match (&result.misc, &result.mx, &result.smtp) {
 			(Err(error), _, _) => {
 				// We log misc errors.
-				sentry_util::error(format!("{:?}", error), &result, option);
+				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
 				// We retry once again.
 				check_fly(body, count - 1, option).await
 			}
 			(_, Err(error), _) => {
 				// We log mx errors.
-				sentry_util::error(format!("{:?}", error), &result, option);
+				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
 				// We retry once again.
 				check_fly(body, count - 1, option).await
@@ -201,7 +206,7 @@ async fn check_fly(
 				// Sentry, to be able to debug them better. We don't want to
 				// spam Sentry and log all instances of the error, hence the
 				// `count` check.
-				sentry_util::error(format!("{:?}", error), &result, option);
+				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
 				// We retry, once with Tor, once with heroku, once direct...
 				check_fly(body, count - 1, option.rotate()).await
@@ -221,9 +226,9 @@ async fn check_heroku(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 
 	// If we got Unknown, log it.
 	// FIXME Better error message? For now, heroku errors should be quite rare,
-	// so let's keep it like this.
+	// so it's still okay.
 	if result.is_reachable == Reachable::Unknown {
-		sentry_util::error("heroku error".into(), &result, RetryOption::Heroku);
+		sentry_util::error("heroku error".into(), Some(&result), RetryOption::Heroku);
 	}
 
 	(ReacherOutput::Ciee(Box::new(result)), RetryOption::Heroku)
