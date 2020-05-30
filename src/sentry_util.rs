@@ -14,20 +14,30 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use super::handlers::RetryOption;
 use check_if_email_exists::CheckEmailOutput;
-use sentry::protocol::{Event, Level};
+use sentry::protocol::{Event, Level, Value};
 use std::{collections::BTreeMap, env};
 
 const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Helper function to send an Info event to Sentry.
-pub fn info(message: String, with_proxy: bool, duration: u128) {
-	let mut extra = BTreeMap::new();
+/// Helper to add provider information (Fly, Heroku) to Sentry events.
+fn add_provider_info(extra: &mut BTreeMap<String, Value>) {
 	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
 		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
+		extra.insert("provider".into(), "fly".into());
+	} else {
+		extra.insert("provider".into(), "heroku".into());
 	}
+}
+
+/// Helper function to send an Info event to Sentry.
+pub fn info(message: String, option: RetryOption, duration: u128) {
+	let mut extra = BTreeMap::new();
+
+	add_provider_info(&mut extra);
 	extra.insert("duration".into(), duration.to_string().into());
-	extra.insert("with_proxy".into(), with_proxy.into());
+	extra.insert("proxy_option".into(), option.to_string().into());
 
 	sentry::capture_event(Event {
 		extra,
@@ -41,15 +51,16 @@ pub fn info(message: String, with_proxy: bool, duration: u128) {
 }
 
 /// Helper function to send an Error event to Sentry.
-pub fn error(message: String, result: &CheckEmailOutput, with_proxy: bool) {
+pub fn error(message: String, result: Option<&CheckEmailOutput>, option: RetryOption) {
 	log::debug!("{}", message);
 
 	let mut extra = BTreeMap::new();
-	extra.insert("CheckEmailOutput".into(), format!("{:#?}", result).into());
-	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
-		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
+
+	add_provider_info(&mut extra);
+	if let Some(result) = result {
+		extra.insert("CheckEmailOutput".into(), format!("{:#?}", result).into());
 	}
-	extra.insert("with_proxy".into(), with_proxy.into());
+	extra.insert("proxy_option".into(), option.to_string().into());
 
 	sentry::capture_event(Event {
 		extra,

@@ -83,7 +83,7 @@ mod tests {
 	use warp::http::StatusCode;
 	use warp::test::request;
 
-	use super::{create_api, handlers::EmailInput, saasify_secret::SAASIFY_SECRET_HEADER};
+	use super::{create_api, handlers::ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
 
 	#[tokio::test]
 	async fn test_missing_saasify_secret() {
@@ -122,14 +122,14 @@ mod tests {
 			.path("/check_email")
 			.method("POST")
 			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
-			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
+			.json(&serde_json::from_str::<ReacherInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
 			.reply(&create_api())
 			.await;
 
 		assert_eq!(resp.status(), StatusCode::OK);
 		assert_eq!(
 			resp.body(),
-			r#"{"input":"foo@bar","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":null,"domain":"","is_valid_syntax":false,"username":""}}"#.as_bytes()
+			r#"{"input":"foo@bar","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":null,"domain":"","is_valid_syntax":false,"username":""}}"#
 		);
 	}
 
@@ -139,14 +139,14 @@ mod tests {
 			.path("/check_email")
 			.method("POST")
 			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
-			.json(&serde_json::from_str::<EmailInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
+			.json(&serde_json::from_str::<ReacherInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 			.reply(&create_api())
 			.await;
 
 		assert_eq!(resp.status(), StatusCode::OK);
 		assert_eq!(
 			resp.body(),
-			r#"{"input":"foo@bar.baz","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#.as_bytes()
+			r#"{"input":"foo@bar.baz","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#
 		);
 	}
 }

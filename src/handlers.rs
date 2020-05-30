@@ -14,28 +14,84 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use super::saasify_secret::get_saasify_secret;
 use super::sentry_util;
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
-	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput,
+	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
+use http_types::headers::HeaderName;
 use serde::{Deserialize, Serialize};
-use std::{convert::Infallible, env, time::Instant};
+use serde_json::Value;
+use std::{convert::Infallible, env, fmt, time::Instant};
 use warp::http::StatusCode;
 
-/// JSON Request from POST /check_email
-#[derive(Debug, Deserialize, Serialize)]
-pub struct EmailInput {
+/// JSON body for POST /check_email
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ReacherInput {
 	from_email: Option<String>,
 	hello_name: Option<String>,
 	to_email: String,
 }
 
+impl Into<CheckEmailInput> for ReacherInput {
+	fn into(self) -> CheckEmailInput {
+		// Create ReacherInput for check_if_email_exists from body
+		let mut input = CheckEmailInput::new(vec![self.to_email]);
+		input
+			.from_email(self.from_email.unwrap_or_else(|| {
+				env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
+			}))
+			.hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()));
+
+		input
+	}
+}
+
+/// Response for POST /check_email. This is mainly an internal type, and both
+/// serialize to the same value.
+#[derive(Serialize)]
+#[serde(untagged)]
+enum ReacherOutput {
+	Ciee(Box<CheckEmailOutput>), // Large variant, boxing the large fields to reduce the total size of the enum.
+	Json(Value),
+}
+
+/// This option represents how we should execute the SMTP connection to check
+/// an email.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RetryOption {
+	/// Use Tor to connect to the SMTP server.
+	Tor,
+	/// Direct connection to the SMTP server.
+	Direct,
+	/// Send a HTTP request to Heroku, which will connect to the SMTP server.
+	Heroku,
+}
+
+impl RetryOption {
+	/// In our retry mechanism, we rotate the way we connect to the SMTP
+	/// server.
+	fn rotate(self) -> Self {
+		match self {
+			RetryOption::Tor => RetryOption::Direct,
+			RetryOption::Direct => RetryOption::Heroku,
+			RetryOption::Heroku => RetryOption::Direct,
+		}
+	}
+}
+
+impl fmt::Display for RetryOption {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{:?}", self)
+	}
+}
+
 /// A recursive async function to retry the `ciee_check_email` function
-/// multiple times, with or without proxy. Returns a Tuple, where the first
-/// element is the result, and the second denotes whether a proxy has been used
-/// to fet this result.
+/// multiple times, depending on the environment we're in. Returns a Tuple,
+/// where the first element is the result, and subsequent elements are the
+/// options passed into the
 ///
 /// # Panics
 ///
@@ -43,48 +99,74 @@ pub struct EmailInput {
 /// check. The function will panic if this field is empty. If it contains more
 /// than 1 field, subsequent emails will be ignored.
 #[async_recursion]
-async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> (CheckEmailOutput, bool) {
-	// We create a local copy of `input`, because we might mutate it for this
-	// iteration of the retry process (depending on whether we use Tor or not).
-	let mut local_input = input.clone();
+async fn check_fly(
+	body: ReacherInput,
+	count: u8,
+	option: RetryOption,
+) -> (ReacherOutput, RetryOption) {
+	log::debug!(target: "reacher", "Retry #{} for {}, with proxy {:?}", count, body.to_email, option);
 
-	log::debug!(target: "reacher", "Retry #{} for {}", count, local_input.to_emails[0]);
+	// If we're using Heroku option, then we make a HTTP call to Heroku.
+	if option == RetryOption::Heroku {
+		return match surf::post("https://reacher-us-1.herokuapp.com/check_email")
+			.set_header(
+				"Content-Type".parse::<HeaderName>().unwrap(),
+				"application/json",
+			)
+			.set_header(
+				"x-saasify-proxy-secret".parse::<HeaderName>().unwrap(),
+				get_saasify_secret(),
+			)
+			.body_json(&body)
+			.expect("We made sure the body is correct. qed.")
+			.recv_json()
+			.await
+		{
+			Ok(result) => (ReacherOutput::Json(result), option),
+			Err(err) => {
+				sentry_util::error(err.to_string(), None, option);
+
+				check_fly(body, count - 1, RetryOption::Tor).await
+			}
+		};
+	}
+
+	let mut input: CheckEmailInput = body.clone().into();
 
 	// If `with_proxy` and relevant ENV vars are set, we proxy.
-	if let (true, Ok(proxy_host), Ok(proxy_port)) = (
-		with_proxy,
+	if let (RetryOption::Tor, Ok(proxy_host), Ok(proxy_port)) = (
+		option,
 		env::var("RCH_PROXY_HOST"),
 		env::var("RCH_PROXY_PORT"),
 	) {
 		if let Ok(proxy_port) = proxy_port.parse::<u16>() {
-			log::debug!(target: "reacher", "Using with_proxy: true");
-			local_input.proxy(proxy_host, proxy_port);
+			input.proxy(proxy_host, proxy_port);
 		}
 	}
 
-	let result = ciee_check_email(&local_input)
+	let result = ciee_check_email(&input)
 		.await
 		.pop()
 		.expect("The input has one element, so does the output. qed.");
 
 	// We return the last fetched result, if the retry count is exhausted.
 	if count <= 1 {
-		(result, with_proxy)
+		(ReacherOutput::Ciee(Box::new(result)), option)
 	} else {
 		match (&result.misc, &result.mx, &result.smtp) {
 			(Err(error), _, _) => {
 				// We log misc errors.
-				sentry_util::error(format!("{:?}", error), &result, with_proxy);
+				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
 				// We retry once again.
-				retry(input, count - 1, with_proxy).await
+				check_fly(body, count - 1, option).await
 			}
 			(_, Err(error), _) => {
 				// We log mx errors.
-				sentry_util::error(format!("{:?}", error), &result, with_proxy);
+				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
 				// We retry once again.
-				retry(input, count - 1, with_proxy).await
+				check_fly(body, count - 1, option).await
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
 				if (
@@ -102,8 +184,8 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> (CheckEma
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// Retry without Tor.
-				retry(input, count - 1, false).await
+				// We retry, once with Tor, once with heroku, once direct...
+				check_fly(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 				if (
@@ -116,48 +198,74 @@ async fn retry(input: CheckEmailInput, count: u8, with_proxy: bool) -> (CheckEma
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// Retry without Tor.
-				retry(input, count - 1, false).await
+				// We retry, once with Tor, once with heroku, once direct...
+				check_fly(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(error)) => {
 				// If it's a SMTP error we didn't catch above, we log to
 				// Sentry, to be able to debug them better. We don't want to
 				// spam Sentry and log all instances of the error, hence the
 				// `count` check.
-				if count <= 3 {
-					sentry_util::error(format!("{:?}", error), &result, with_proxy);
-				}
+				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
-				// We retry, once with Tor, once without.
-				retry(input, count - 1, !with_proxy).await
+				// We retry, once with Tor, once with heroku, once direct...
+				check_fly(body, count - 1, option.rotate()).await
 			}
 			// If everything is ok, we just return the result.
-			(Ok(_), Ok(_), Ok(_)) => (result, with_proxy),
+			(Ok(_), Ok(_), Ok(_)) => (ReacherOutput::Ciee(Box::new(result)), option),
 		}
+	}
+}
+
+/// If we're on Heroku, then we just do a simple check.
+async fn check_heroku(body: ReacherInput) -> (ReacherOutput, RetryOption) {
+	let result = ciee_check_email(&body.into())
+		.await
+		.pop()
+		.expect("The input has one element, so does the output. qed.");
+
+	// If we got Unknown, log it.
+	// FIXME Better error message? For now, heroku errors should be quite rare,
+	// so it's still okay.
+	if result.is_reachable == Reachable::Unknown {
+		sentry_util::error("heroku error".into(), Some(&result), RetryOption::Heroku);
+	}
+
+	(ReacherOutput::Ciee(Box::new(result)), RetryOption::Heroku)
+}
+
+/// We deploy this same code on Fly and on Heroku. Depending on which provider
+/// we're calling this code from, we execute a different logic.
+async fn check(body: ReacherInput) -> (ReacherOutput, RetryOption) {
+	// Detect if we're on heroku.
+	let is_fly = env::var("FLY_ALLOC_ID").is_ok();
+	if is_fly {
+		check_fly(body, 4, RetryOption::Tor).await
+	} else {
+		check_heroku(body).await
 	}
 }
 
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
-pub async fn check_email(_: (), body: EmailInput) -> Result<impl warp::Reply, Infallible> {
-	// Create EmailInput for check_if_email_exists from body
-	let mut input = CheckEmailInput::new(vec![body.to_email]);
-	input
-		.from_email(body.from_email.unwrap_or_else(|| {
-			env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
-		}))
-		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
-
+pub async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, Infallible> {
 	// Run `ciee_check_email` function 4 times max. Also measure the
 	// verification time.
 	let now = Instant::now();
-	let (result, with_proxy) = retry(input, 4, true).await;
-	sentry_util::info(
-		format!("is_reachable={:?}", result.is_reachable),
-		with_proxy,
-		now.elapsed().as_millis(),
-	);
+	let (result, option) = check(body).await;
+
+	// Note:
+	// - if running on Fly, this will not log it we made a request to Heroku.
+	//   FIXME: We should also log if we used RetryOption::Heroku.
+	// - if running on Heroku, this will only log the Heroku verification.
+	if let ReacherOutput::Ciee(value) = &result {
+		sentry_util::info(
+			format!("is_reachable={:?}", value.is_reachable),
+			option,
+			now.elapsed().as_millis(),
+		);
+	}
 
 	Ok(warp::reply::with_status(
 		warp::reply::json(&result),
