@@ -9,6 +9,8 @@ This repo holds the backend for [Reacher](https://reacherhq.github.io/). The bac
 
 ## Get Started
 
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend)
+
 To run the server, just run:
 
 ```bash
