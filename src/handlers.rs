@@ -70,6 +70,8 @@ pub enum RetryOption {
 }
 
 impl RetryOption {
+	/// In our retry mechanism, we rotate the way we connect to the SMTP
+	/// server.
 	fn rotate(self) -> Self {
 		match self {
 			RetryOption::Tor => RetryOption::Direct,
