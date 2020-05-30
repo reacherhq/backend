@@ -11,7 +11,7 @@ on:
       - master
 
 jobs:
-  # Cargo check
+  # Cargo check.
   check:
     runs-on: ubuntu-latest
     steps:
@@ -30,7 +30,7 @@ jobs:
         with:
           command: check
 
-  # Cargo test
+  # Cargo test.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +50,7 @@ jobs:
           command: test
           args: --all
 
-  # Cargo fmt and clippy
+  # Cargo fmt and clippy.
   lints:
     runs-on: ubuntu-latest
     steps:
@@ -77,7 +77,7 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-  # Build a binary with target `x86_64-unknown-linux-musl`, put in artifacts
+  # Build a binary with target `x86_64-unknown-linux-musl`, put in artifacts.
   build:
     runs-on: ubuntu-latest
     steps:
@@ -95,7 +95,18 @@ jobs:
           name: reacher-${{ github.sha }}
           path: ./target/x86_64-unknown-linux-musl/release/reacher
 
-  # Deploy a staging release on Fly
+  # Deploy the code to Heroku.
+  heroku:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: reacher-us-1
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+
+  # Deploy a staging release on Fly.
   staging:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
