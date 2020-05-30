@@ -50,6 +50,7 @@ impl Into<CheckEmailInput> for ReacherInput {
 /// Response for POST /check_email. This is mainly an internal type, and both
 /// serialize to the same value.
 #[derive(Serialize)]
+#[serde(untagged)]
 enum ReacherOutput {
 	Ciee(CheckEmailOutput),
 	Json(Value),
