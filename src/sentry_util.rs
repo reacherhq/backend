@@ -26,6 +26,9 @@ pub fn info(message: String, option: RetryOption, duration: u128) {
 	let mut extra = BTreeMap::new();
 	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
 		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
+		extra.insert("provider".into(), "fly".into());
+	} else {
+		extra.insert("provider".into(), "heroku".into());
 	}
 	extra.insert("duration".into(), duration.to_string().into());
 	extra.insert("proxy_option".into(), option.to_string().into());

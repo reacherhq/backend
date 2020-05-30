@@ -18,7 +18,7 @@ use super::sentry_util;
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
-	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput,
+	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
 use http_types::headers::HeaderName;
 use serde::{Deserialize, Serialize};
@@ -107,7 +107,7 @@ async fn check_fly(
 
 	// If we're using Heroku option, then we make a HTTP call to Heroku.
 	if option == RetryOption::Heroku {
-		let result: Value = match surf::post("https://reacher-us-1.herokuapp.com/check_email")
+		return match surf::post("https://reacher-us-1.herokuapp.com/check_email")
 			.set_header(
 				"Content-Type".parse::<HeaderName>().unwrap(),
 				"application/json",
@@ -121,11 +121,9 @@ async fn check_fly(
 			.recv_json()
 			.await
 		{
-			Ok(result) => result,
-			Err(_) => unreachable!(),
+			Ok(result) => (ReacherOutput::Json(result), option),
+			Err(_) => check_fly(body, count - 1, RetryOption::Tor).await,
 		};
-
-		return (ReacherOutput::Json(result), option);
 	}
 
 	let mut input: CheckEmailInput = body.clone().into();
@@ -216,15 +214,19 @@ async fn check_fly(
 
 /// If we're on Heroku, then we just do a simple check.
 async fn check_heroku(body: ReacherInput) -> (ReacherOutput, RetryOption) {
-	(
-		ReacherOutput::Ciee(Box::new(
-			ciee_check_email(&body.into())
-				.await
-				.pop()
-				.expect("The input has one element, so does the output. qed."),
-		)),
-		RetryOption::Heroku,
-	)
+	let result = ciee_check_email(&body.into())
+		.await
+		.pop()
+		.expect("The input has one element, so does the output. qed.");
+
+	// If we got Unknown, log it.
+	// FIXME Better error message? For now, heroku errors should be quite rare,
+	// so let's keep it like this.
+	if result.is_reachable == Reachable::Unknown {
+		sentry_util::error("heroku error".into(), &result, RetryOption::Heroku);
+	}
+
+	(ReacherOutput::Ciee(Box::new(result)), RetryOption::Heroku)
 }
 
 /// We deploy this same code on Fly and on Heroku. Depending on which provider
@@ -233,7 +235,7 @@ async fn check(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 	// Detect if we're on heroku.
 	let is_fly = env::var("FLY_ALLOC_ID").is_ok();
 	if is_fly {
-		check_fly(body, 3, RetryOption::Tor).await
+		check_fly(body, 4, RetryOption::Tor).await
 	} else {
 		check_heroku(body).await
 	}
@@ -247,7 +249,11 @@ pub async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, 
 	// verification time.
 	let now = Instant::now();
 	let (result, option) = check(body).await;
-	// FIXME Also log results from Heroku?
+
+	// Note:
+	// - if running on Fly, this will not log it we made a request to Heroku.
+	//   FIXME: We should also log if we used RetryOption::Heroku.
+	// - if running on Heroku, this will only log the Heroku verification.
 	if let ReacherOutput::Ciee(value) = &result {
 		sentry_util::info(
 			format!("is_reachable={:?}", value.is_reachable),

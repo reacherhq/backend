@@ -6,8 +6,8 @@ on:
       - v*.*.*
 
 jobs:
-  # Build the binary, and publish it as a Github Release
-  publish:
+  # Build the binary, and publish it as a Github Release, deploy to Fly.
+  fly:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -40,3 +40,14 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         with:
           args: "deploy --config fly.production.toml --dockerfile production.Dockerfile --remote-only"
+
+  # Deploy the code to Heroku.
+  heroku:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.0.4
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: reacher-us-1
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
