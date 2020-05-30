@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.3](https://github.com/reacherhq/backend/compare/v0.2.2...v0.2.3) (2020-05-30)
+
+
+### Features
+
+* Add heroku deployment ([#72](https://github.com/reacherhq/backend/issues/72)) ([e08b70f](https://github.com/reacherhq/backend/commit/e08b70fa4a4d2b0d153a9200f84ac5164e0de204))
+
+
+### Bug Fixes
+
+* Add additional error message parsing ([#71](https://github.com/reacherhq/backend/issues/71)) ([8b7c394](https://github.com/reacherhq/backend/commit/8b7c394c982f6effa550284c3fbef17edc0d73a0))
+
 ### [0.2.2](https://github.com/reacherhq/backend/compare/v0.2.1...v0.2.2) (2020-05-24)
 
 
