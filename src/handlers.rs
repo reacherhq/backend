@@ -53,7 +53,7 @@ impl Into<CheckEmailInput> for ReacherInput {
 #[derive(Serialize)]
 #[serde(untagged)]
 enum ReacherOutput {
-	Ciee(CheckEmailOutput),
+	Ciee(Box<CheckEmailOutput>), // Large variant, boxing the large fields to reduce the total size of the enum.
 	Json(Value),
 }
 
@@ -70,7 +70,7 @@ pub enum RetryOption {
 }
 
 impl RetryOption {
-	fn rotate(&self) -> Self {
+	fn rotate(self) -> Self {
 		match self {
 			RetryOption::Tor => RetryOption::Direct,
 			RetryOption::Direct => RetryOption::Heroku,
@@ -146,7 +146,7 @@ async fn check_fly(
 
 	// We return the last fetched result, if the retry count is exhausted.
 	if count <= 1 {
-		(ReacherOutput::Ciee(result), option)
+		(ReacherOutput::Ciee(Box::new(result)), option)
 	} else {
 		match (&result.misc, &result.mx, &result.smtp) {
 			(Err(error), _, _) => {
@@ -207,7 +207,7 @@ async fn check_fly(
 				check_fly(body, count - 1, option.rotate()).await
 			}
 			// If everything is ok, we just return the result.
-			(Ok(_), Ok(_), Ok(_)) => (ReacherOutput::Ciee(result), option),
+			(Ok(_), Ok(_), Ok(_)) => (ReacherOutput::Ciee(Box::new(result)), option),
 		}
 	}
 }
@@ -215,12 +215,12 @@ async fn check_fly(
 /// If we're on Heroku, then we just do a simple check.
 async fn check_heroku(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 	(
-		ReacherOutput::Ciee(
+		ReacherOutput::Ciee(Box::new(
 			ciee_check_email(&body.into())
 				.await
 				.pop()
 				.expect("The input has one element, so does the output. qed."),
-		),
+		)),
 		RetryOption::Heroku,
 	)
 }
