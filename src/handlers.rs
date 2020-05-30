@@ -20,6 +20,7 @@ use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
 	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput,
 };
+use http_types::headers::HeaderName;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{convert::Infallible, env, fmt, time::Instant};
@@ -105,9 +106,12 @@ async fn check_fly(
 	// If we're using Heroku option, then we make a HTTP call to Heroku.
 	if option == RetryOption::Heroku {
 		let result: Value = match surf::post("https://reacher-us-1.herokuapp.com/check_email")
-			.set_header("Content-Type", "application/json")
 			.set_header(
-				"x-saasify-proxy-secret",
+				"Content-Type".parse::<HeaderName>().unwrap(),
+				"application/json",
+			)
+			.set_header(
+				"x-saasify-proxy-secret".parse::<HeaderName>().unwrap(),
 				env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into()),
 			)
 			.body_json(&body)
@@ -241,7 +245,7 @@ pub async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, 
 	// verification time.
 	let now = Instant::now();
 	let (result, option) = check(body).await;
-	// FIXME Also log results from Heroku.
+	// FIXME Also log results from Heroku?
 	if let ReacherOutput::Ciee(value) = &result {
 		sentry_util::info(
 			format!("is_reachable={:?}", value.is_reachable),
