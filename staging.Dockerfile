@@ -5,7 +5,7 @@ WORKDIR /reacher
 ENV RCH_HTTP_HOST 0.0.0.0
 ENV RCH_PROXY_HOST 127.0.0.1
 ENV RCH_PROXY_PORT 9050
-ENV RUST_LOG reacher=debug
+ENV RUST_LOG debug
 
 # Install needed libraries
 RUN apk update && \
