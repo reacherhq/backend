@@ -249,7 +249,7 @@ async fn check(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
-pub async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, Infallible> {
+pub async fn check_email( body: ReacherInput) -> Result<impl warp::Reply, Infallible> {
 	// Run `ciee_check_email` function 4 times max. Also measure the
 	// verification time.
 	let now = Instant::now();

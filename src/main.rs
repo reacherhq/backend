@@ -27,10 +27,6 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 	// POST /check_email
 	warp::path("check_email")
 		.and(warp::post())
-		// FIXME We should be able to just use warp::header::exact, and remove
-		// completely `./saasify_secret.rs`.
-		// https://github.com/seanmonstar/warp/issues/503
-		.and(check_saasify_secret())
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		.and(warp::body::content_length_limit(1024 * 16))
@@ -85,36 +81,7 @@ mod tests {
 
 	use super::{create_api, handlers::ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
 
-	#[tokio::test]
-	async fn test_missing_saasify_secret() {
-		let resp = request()
-			.path("/check_email")
-			.method("POST")
-			.reply(&create_api())
-			.await;
 
-		assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-		assert_eq!(
-			resp.body(),
-			"Missing request header \"x-saasify-proxy-secret\"".as_bytes()
-		);
-	}
-
-	#[tokio::test]
-	async fn test_incorrect_saasify_secret() {
-		let resp = request()
-			.path("/check_email")
-			.method("POST")
-			.header(SAASIFY_SECRET_HEADER, "incorrect")
-			.reply(&create_api())
-			.await;
-
-		assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
-		assert_eq!(
-			resp.body(),
-			"Unhandled rejection: IncorrectSaasifySecret".as_bytes()
-		);
-	}
 
 	#[tokio::test]
 	async fn test_input_foo_bar() {
