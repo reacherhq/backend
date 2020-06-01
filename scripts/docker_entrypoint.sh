@@ -5,4 +5,4 @@ set -e
 tor &
 
 # Run Reacher with logs
-RUST_LOG=reacher ./reacher
+./reacher
