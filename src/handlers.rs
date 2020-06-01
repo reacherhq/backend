@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use super::saasify_secret::get_saasify_secret;
 use super::sentry_util;
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
@@ -112,10 +111,6 @@ async fn check_fly(
 			.set_header(
 				"Content-Type".parse::<HeaderName>().unwrap(),
 				"application/json",
-			)
-			.set_header(
-				"x-saasify-proxy-secret".parse::<HeaderName>().unwrap(),
-				get_saasify_secret(),
 			)
 			.body_json(&body)
 			.expect("We made sure the body is correct. qed.")

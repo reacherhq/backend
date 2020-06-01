@@ -15,10 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod handlers;
-mod saasify_secret;
 mod sentry_util;
 
-use saasify_secret::check_saasify_secret;
 use std::{env, net::IpAddr};
 use warp::Filter;
 
@@ -79,7 +77,7 @@ mod tests {
 	use warp::http::StatusCode;
 	use warp::test::request;
 
-	use super::{create_api, handlers::ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
+	use super::{create_api, handlers::ReacherInput};
 
 
 
@@ -88,7 +86,6 @@ mod tests {
 		let resp = request()
 			.path("/check_email")
 			.method("POST")
-			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
 			.json(&serde_json::from_str::<ReacherInput>(r#"{"to_email": "foo@bar"}"#).unwrap())
 			.reply(&create_api())
 			.await;
@@ -105,7 +102,6 @@ mod tests {
 		let resp = request()
 			.path("/check_email")
 			.method("POST")
-			.header(SAASIFY_SECRET_HEADER, "reacher_dev_secret")
 			.json(&serde_json::from_str::<ReacherInput>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 			.reply(&create_api())
 			.await;
