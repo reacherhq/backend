@@ -79,8 +79,6 @@ mod tests {
 
 	use super::{create_api, handlers::ReacherInput};
 
-
-
 	#[tokio::test]
 	async fn test_input_foo_bar() {
 		let resp = request()
