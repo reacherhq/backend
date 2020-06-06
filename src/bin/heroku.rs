@@ -14,13 +14,38 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod handlers;
-mod saasify_secret;
-mod sentry_util;
 
-use saasify_secret::check_saasify_secret;
-use std::{env, net::IpAddr};
+use reacher_backend::{check, saasify_secret::check_saasify_secret, sentry_util, ReacherInput, ReacherOutput};
+use std::{convert::Infallible, env, net::IpAddr, time::Instant};
+use warp::http::StatusCode;
 use warp::Filter;
+
+/// Given an email address (and optionally some additional configuration
+/// options), return if email verification details as given by
+/// `check_if_email_exists`.
+async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, Infallible> {
+	// Run `ciee_check_email` with retries if necessary. Also measure the
+	// verification time.
+	let now = Instant::now();
+	let (result, option) = check(body).await;
+
+	// Note:
+	// - if running on Fly, this will not log it we made a request to Heroku.
+	//   FIXME: We should also log if we used RetryOption::Heroku.
+	// - if running on Heroku, this will only log the Heroku verification.
+	if let ReacherOutput::Ciee(value) = &result {
+		sentry_util::info(
+			format!("is_reachable={:?}", value.is_reachable),
+			option,
+			now.elapsed().as_millis(),
+		);
+	}
+
+	Ok(warp::reply::with_status(
+		warp::reply::json(&result),
+		StatusCode::OK,
+	))
+}
 
 /// Create all the endpoints of our API.
 fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -35,7 +60,7 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 		// payloads)...
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
-		.and_then(handlers::check_email)
+		.and_then(check_email)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }
@@ -79,11 +104,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 #[cfg(test)]
 mod tests {
+	use super::create_api;
+	use reacher_backend::{ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
 	use serde_json;
 	use warp::http::StatusCode;
 	use warp::test::request;
-
-	use super::{create_api, handlers::ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
 
 	#[tokio::test]
 	async fn test_missing_saasify_secret() {

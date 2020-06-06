@@ -1,0 +1,48 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+# app and org for use with dashboard.serverless.com
+org: reacher
+app: backend
+service: reacher-backend
+
+provider:
+  name: aws
+  runtime: rust
+
+plugins:
+  - serverless-rust
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+package:
+  individually: true
+
+functions:
+  check-email:
+    events:
+      - http:
+          path: /check_email
+          method: POST
+          cors:
+            origins:
+              - http://localhost:8000 # For dev
+              - https://reacher.email # For the prod version
+              - https://*.saasify.sh # For the prod version
+    # handler value syntax is `{cargo-package-name}.{bin-name}`
+    # or `{cargo-package-name}` for short when you are building a
+    # default bin for a given package.
+    handler: check-email
+    timeout: 30

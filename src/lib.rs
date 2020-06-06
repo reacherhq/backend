@@ -14,18 +14,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use super::saasify_secret::get_saasify_secret;
-use super::sentry_util;
+pub mod saasify_secret;
+pub mod sentry_util;
+
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
 	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
 use http_types::headers::HeaderName;
+use saasify_secret::get_saasify_secret;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{convert::Infallible, env, fmt, time::Instant};
-use warp::http::StatusCode;
+use std::{env, fmt};
 
 /// JSON body for POST /check_email
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -53,7 +54,7 @@ impl Into<CheckEmailInput> for ReacherInput {
 /// serialize to the same value.
 #[derive(Serialize)]
 #[serde(untagged)]
-enum ReacherOutput {
+pub enum ReacherOutput {
 	Ciee(Box<CheckEmailOutput>), // Large variant, boxing the large fields to reduce the total size of the enum.
 	Json(Value),
 }
@@ -236,7 +237,7 @@ async fn check_heroku(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 
 /// We deploy this same code on Fly and on Heroku. Depending on which provider
 /// we're calling this code from, we execute a different logic.
-async fn check(body: ReacherInput) -> (ReacherOutput, RetryOption) {
+pub async fn check(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 	// Detect if we're on heroku.
 	let is_fly = env::var("FLY_ALLOC_ID").is_ok();
 	if is_fly {
@@ -244,31 +245,4 @@ async fn check(body: ReacherInput) -> (ReacherOutput, RetryOption) {
 	} else {
 		check_heroku(body).await
 	}
-}
-
-/// Given an email address (and optionally some additional configuration
-/// options), return if email verification details as given by
-/// `check_if_email_exists`.
-pub async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, Infallible> {
-	// Run `ciee_check_email` function 4 times max. Also measure the
-	// verification time.
-	let now = Instant::now();
-	let (result, option) = check(body).await;
-
-	// Note:
-	// - if running on Fly, this will not log it we made a request to Heroku.
-	//   FIXME: We should also log if we used RetryOption::Heroku.
-	// - if running on Heroku, this will only log the Heroku verification.
-	if let ReacherOutput::Ciee(value) = &result {
-		sentry_util::info(
-			format!("is_reachable={:?}", value.is_reachable),
-			option,
-			now.elapsed().as_millis(),
-		);
-	}
-
-	Ok(warp::reply::with_status(
-		warp::reply::json(&result),
-		StatusCode::OK,
-	))
 }
