@@ -23,9 +23,14 @@ provider:
 plugins:
   - serverless-rust
 
-# you can overwrite defaults here
+# You can overwrite defaults here.
 #  stage: dev
 #  region: us-east-1
+
+# Creates one artifact for each function.
+# https://www.serverless.com/framework/docs/providers/aws/guide/packaging/#individual-function-packages
+package:
+  individually: true
 
 functions:
   check-email:
@@ -43,3 +48,5 @@ functions:
     # default bin for a given package.
     handler: reacher_backend.serverless
     timeout: 30
+    environment:
+      RCH_PROVIDER: serverless

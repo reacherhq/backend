@@ -21,13 +21,10 @@ use std::{collections::BTreeMap, env};
 
 const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Helper to add provider information (Fly, Heroku) to Sentry events.
+/// Helper to add provider information (Serverless, Heroku) to Sentry events.
 fn add_provider_info(extra: &mut BTreeMap<String, Value>) {
-	if let Ok(fly_alloc_id) = env::var("FLY_ALLOC_ID") {
-		extra.insert("FLY_ALLOC_ID".into(), fly_alloc_id.into());
-		extra.insert("provider".into(), "fly".into());
-	} else {
-		extra.insert("provider".into(), "heroku".into());
+	if let Ok(reacher_provider) = env::var("RCH_PROVIDER") {
+		extra.insert("RCH_PROVIDER".into(), reacher_provider.into());
 	}
 }
 

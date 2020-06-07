@@ -14,32 +14,36 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-use reacher_backend::{check, saasify_secret::check_saasify_secret, sentry_util, ReacherInput, ReacherOutput};
-use std::{convert::Infallible, env, net::IpAddr, time::Instant};
+use reacher_backend::{
+	check_email_heroku,
+	saasify_secret::{get_saasify_secret, IncorrectSaasifySecret, SAASIFY_SECRET_HEADER},
+	setup, ReacherInput,
+};
+use std::{convert::Infallible, env, net::IpAddr};
 use warp::http::StatusCode;
 use warp::Filter;
+
+/// Warp filter to check that the Saasify header secret is correct.
+fn check_saasify_secret() -> impl warp::Filter<Extract = ((),), Error = warp::Rejection> + Clone {
+	warp::header::<String>(SAASIFY_SECRET_HEADER).and_then(|header: String| async move {
+		let saasify_secret = get_saasify_secret();
+
+		if header
+			.as_bytes()
+			.eq_ignore_ascii_case(saasify_secret.as_bytes())
+		{
+			Ok(())
+		} else {
+			Err(warp::reject::custom(IncorrectSaasifySecret {}))
+		}
+	})
+}
 
 /// Given an email address (and optionally some additional configuration
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
 async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, Infallible> {
-	// Run `ciee_check_email` with retries if necessary. Also measure the
-	// verification time.
-	let now = Instant::now();
-	let (result, option) = check(body).await;
-
-	// Note:
-	// - if running on Fly, this will not log it we made a request to Heroku.
-	//   FIXME: We should also log if we used RetryOption::Heroku.
-	// - if running on Heroku, this will only log the Heroku verification.
-	if let ReacherOutput::Ciee(value) = &result {
-		sentry_util::info(
-			format!("is_reachable={:?}", value.is_reachable),
-			option,
-			now.elapsed().as_millis(),
-		);
-	}
+	let result = check_email_heroku(body).await;
 
 	Ok(warp::reply::with_status(
 		warp::reply::json(&result),
@@ -76,16 +80,7 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 /// is malformed, then the program will panic.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-	env_logger::init();
-
-	// Use an empty string if we don't have any env variable for sentry. Sentry
-	// will just silently ignore.
-	let sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
-	// Sentry will also catch panics.
-	sentry::integrations::panic::register_panic_handler();
-	if sentry.is_enabled() {
-		log::info!(target: "reacher", "Sentry is successfully set up.")
-	}
+	setup();
 
 	let api = create_api();
 
@@ -105,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 #[cfg(test)]
 mod tests {
 	use super::create_api;
-	use reacher_backend::{ReacherInput, saasify_secret::SAASIFY_SECRET_HEADER};
+	use reacher_backend::{saasify_secret::SAASIFY_SECRET_HEADER, ReacherInput};
 	use serde_json;
 	use warp::http::StatusCode;
 	use warp::test::request;
