@@ -27,9 +27,6 @@ plugins:
 #  stage: dev
 #  region: us-east-1
 
-package:
-  individually: true
-
 functions:
   check-email:
     events:
@@ -44,5 +41,5 @@ functions:
     # handler value syntax is `{cargo-package-name}.{bin-name}`
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.
-    handler: check-email
+    handler: reacher_backend.serverless
     timeout: 30

@@ -1,5 +1,6 @@
 # Generated
 node_modules
+.serverless
 target
 
 # Binaries
