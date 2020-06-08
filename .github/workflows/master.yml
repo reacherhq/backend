@@ -4,7 +4,6 @@
 #       - master
 on: [pull_request]
 
-name: Deploy master branch
 jobs:
   deploy:
     name: deploy

@@ -40,6 +40,10 @@ plugins:
 package:
   individually: true
 
+custom:
+  rust:
+    dockerless: true
+
 functions:
   check-email:
     events:
