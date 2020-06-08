@@ -65,9 +65,8 @@ pub enum ReacherOutput {
 pub enum RetryOption {
 	/// Use Tor to connect to the SMTP server.
 	Tor,
-	/// Direct connection to the SMTP server.
-	Direct,
-	/// Send a HTTP request to Heroku, which will connect to the SMTP server.
+	/// Send a HTTP request to Heroku, which will connect to the SMTP server
+	/// directly.
 	Heroku,
 }
 
@@ -76,9 +75,8 @@ impl RetryOption {
 	/// server.
 	fn rotate(self) -> Self {
 		match self {
-			RetryOption::Tor => RetryOption::Direct,
-			RetryOption::Direct => RetryOption::Heroku,
-			RetryOption::Heroku => RetryOption::Direct,
+			RetryOption::Tor => RetryOption::Heroku,
+			RetryOption::Heroku => RetryOption::Tor,
 		}
 	}
 }
@@ -185,7 +183,7 @@ async fn check_serverless(
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// We retry, once with Tor, once with heroku, once direct...
+				// We retry, once with Tor, once with heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
@@ -199,7 +197,7 @@ async fn check_serverless(
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// We retry, once with Tor, once with heroku, once direct...
+				// We retry, once with Tor, once with heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(error)) => {
@@ -209,7 +207,7 @@ async fn check_serverless(
 				// `count` check.
 				sentry_util::error(format!("{:?}", error), Some(&result), option);
 
-				// We retry, once with Tor, once with heroku, once direct...
+				// We retry, once with Tor, once with heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			// If everything is ok, we just return the result.
@@ -259,7 +257,7 @@ pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 	// Run `ciee_check_email` with retries if necessary. Also measure the
 	// verification time.
 	let now = Instant::now();
-	let (result, option) = check_serverless(body, 4, RetryOption::Tor).await;
+	let (result, option) = check_serverless(body, 3, RetryOption::Tor).await;
 
 	// Note: This will not log if we made a request to Heroku.
 	// FIXME: We should also log if we used RetryOption::Heroku.

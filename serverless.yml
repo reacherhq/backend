@@ -26,7 +26,7 @@ provider:
     RCH_PROXY_PORT: 10080
     RCH_SAASIFY_SECRET: ${param:RCH_SAASIFY_SECRET}
     RCH_SENTRY_DSN: ${param:RCH_SENTRY_DSN}
-    RUST_LOG: reacher=info
+    RUST_LOG: ${param:RUST_LOG}
 
 plugins:
   - serverless-rust
@@ -55,4 +55,5 @@ functions:
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.
     handler: reacher_backend.serverless
+    memorySize: 128
     timeout: 30
