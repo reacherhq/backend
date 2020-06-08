@@ -1,0 +1,59 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+# app and org for use with dashboard.serverless.com
+org: reacher
+app: backend
+service: reacher-backend
+
+provider:
+  name: aws
+  runtime: rust
+  environment:
+    RCH_FROM_EMAIL: ${param:RCH_FROM_EMAIL}
+    RCH_PROVIDER: serverless
+    RCH_PROXY_HOST: ${param:RCH_PROXY_HOST}
+    RCH_PROXY_PORT: 10080
+    RCH_SAASIFY_SECRET: ${param:RCH_SAASIFY_SECRET}
+    RCH_SENTRY_DSN: ${param:RCH_SENTRY_DSN}
+    RUST_LOG: ${param:RUST_LOG}
+
+plugins:
+  - serverless-rust
+
+# You can overwrite defaults here.
+#  stage: dev
+#  region: us-east-1
+
+# Creates one artifact for each function.
+# https://www.serverless.com/framework/docs/providers/aws/guide/packaging/#individual-function-packages
+package:
+  individually: true
+
+functions:
+  check-email:
+    events:
+      - http:
+          path: /check_email
+          method: POST
+          cors:
+            origins:
+              - http://localhost:8000 # For dev
+              - https://reacher.email # For the prod version
+              - https://*.saasify.sh # For the prod version
+    # handler value syntax is `{cargo-package-name}.{bin-name}`
+    # or `{cargo-package-name}` for short when you are building a
+    # default bin for a given package.
+    handler: reacher_backend.serverless
+    memorySize: 128
+    timeout: 30

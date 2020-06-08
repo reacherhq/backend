@@ -1,0 +1,16 @@
+app = "reacher-tor"
+
+[[services]]
+  internal_port = 9050
+  protocol = "tcp"
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.ports]]
+    port = "10080"
+
+  [[services.tcp_checks]]
+    interval = 10000
+    timeout = 2000

@@ -1,5 +1,9 @@
 # Generated
+node_modules
+.serverless
 target
+
+# Binaries
 reacher
 
 # OS-related files

@@ -1,1 +1,1 @@
-web: RUST_LOG=reacher ./target/release/reacher
+web: ./target/release/heroku

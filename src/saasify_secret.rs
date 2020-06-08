@@ -14,11 +14,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::env;
-use warp::Filter;
+use std::{env, fmt};
 
 #[derive(Debug)]
-struct IncorrectSaasifySecret {}
+pub struct IncorrectSaasifySecret {}
+
+impl Default for IncorrectSaasifySecret {
+	fn default() -> Self {
+		IncorrectSaasifySecret {}
+	}
+}
+
+impl IncorrectSaasifySecret {
+	pub fn new() -> Self {
+		Default::default()
+	}
+}
+
+impl fmt::Display for IncorrectSaasifySecret {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{:?}", self)
+	}
+}
 
 impl warp::reject::Reject for IncorrectSaasifySecret {}
 
@@ -28,21 +45,4 @@ pub const SAASIFY_SECRET_HEADER: &str = "x-saasify-proxy-secret";
 /// secret.
 pub fn get_saasify_secret() -> String {
 	env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| "reacher_dev_secret".into())
-}
-
-/// Warp filter to check that the Saasify header secret is correct.
-pub fn check_saasify_secret() -> impl warp::Filter<Extract = ((),), Error = warp::Rejection> + Clone
-{
-	warp::header::<String>(SAASIFY_SECRET_HEADER).and_then(|header: String| async move {
-		let saasify_secret = get_saasify_secret();
-
-		if header
-			.as_bytes()
-			.eq_ignore_ascii_case(saasify_secret.as_bytes())
-		{
-			Ok(())
-		} else {
-			Err(warp::reject::custom(IncorrectSaasifySecret {}))
-		}
-	})
 }
