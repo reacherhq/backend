@@ -19,9 +19,15 @@ use std::{env, fmt};
 #[derive(Debug)]
 pub struct IncorrectSaasifySecret {}
 
+impl Default for IncorrectSaasifySecret {
+	fn default() -> Self {
+		IncorrectSaasifySecret {}
+	}
+}
+
 impl IncorrectSaasifySecret {
 	pub fn new() -> Self {
-		IncorrectSaasifySecret {}
+		Default::default()
 	}
 }
 
