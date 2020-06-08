@@ -11,19 +11,7 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
       - run: yarn install
-
-      - name: setup Docker
-        uses: docker-practice/actions-setup-docker@master
-
       - name: serverless deploy
         run: yarn serverless deploy
         env:
