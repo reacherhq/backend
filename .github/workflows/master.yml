@@ -21,6 +21,9 @@ jobs:
 
       - run: yarn install
 
+      - name: setup Docker
+        uses: docker-practice/actions-setup-docker@master
+
       - name: serverless deploy
         uses: serverless/github-action@master
         with:
