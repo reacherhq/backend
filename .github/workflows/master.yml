@@ -1,0 +1,20 @@
+# on:
+#   push:
+#     branches:
+#       - master
+on: [pull_request]
+
+name: Deploy master branch
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: yarn install
+      - name: serverless deploy
+        uses: serverless/github-action@master
+        with:
+          args: deploy
+        env:
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
