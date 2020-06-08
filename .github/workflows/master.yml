@@ -24,15 +24,5 @@ jobs:
       - name: setup Docker
         uses: docker-practice/actions-setup-docker@master
 
-      - run: |
-          echo "TESTING"
-          cargo --version
-          docker --version
-
       - name: serverless deploy
-        uses: serverless/github-action@master
-        with:
-          args: deploy
-        env:
-          SLS_DEBUG: *
-          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+        run: yarn serverless deploy
