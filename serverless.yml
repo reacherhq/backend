@@ -19,6 +19,14 @@ service: reacher-backend
 provider:
   name: aws
   runtime: rust
+  environment:
+    RCH_FROM_EMAIL: ${param:RCH_FROM_EMAIL}
+    RCH_PROVIDER: serverless
+    RCH_PROXY_HOST: ${param:RCH_PROXY_HOST}
+    RCH_PROXY_PORT: 10080
+    RCH_SAASIFY_SECRET: ${param:RCH_SAASIFY_SECRET}
+    RCH_SENTRY_DSN: ${param:RCH_SENTRY_DSN}
+    RUST_LOG: reacher=info
 
 plugins:
   - serverless-rust
@@ -48,5 +56,3 @@ functions:
     # default bin for a given package.
     handler: reacher_backend.serverless
     timeout: 30
-    environment:
-      RCH_PROVIDER: serverless

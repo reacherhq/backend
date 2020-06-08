@@ -261,7 +261,7 @@ pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 	let now = Instant::now();
 	let (result, option) = check_serverless(body, 4, RetryOption::Tor).await;
 
-	// Note:T his will not log if we made a request to Heroku.
+	// Note: This will not log if we made a request to Heroku.
 	// FIXME: We should also log if we used RetryOption::Heroku.
 	if let ReacherOutput::Ciee(value) = &result {
 		sentry_util::info(
