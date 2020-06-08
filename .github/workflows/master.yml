@@ -19,6 +19,8 @@ jobs:
           toolchain: stable
           override: true
 
+      - run: yarn install
+
       - name: serverless deploy
         uses: serverless/github-action@master
         with:
