@@ -24,6 +24,11 @@ jobs:
       - name: setup Docker
         uses: docker-practice/actions-setup-docker@master
 
+      - run: |
+          echo "TESTING"
+          cargo --version
+          docker --version
+
       - name: serverless deploy
         uses: serverless/github-action@master
         with:
