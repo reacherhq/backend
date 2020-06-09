@@ -17,6 +17,7 @@
 use reacher_backend::{
 	check_email_heroku,
 	saasify_secret::{get_saasify_secret, IncorrectSaasifySecret, SAASIFY_SECRET_HEADER},
+	sentry_util::CARGO_PKG_VERSION,
 	setup, ReacherInput,
 };
 use std::{convert::Infallible, env, net::IpAddr};
@@ -54,7 +55,7 @@ async fn check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply, Infa
 /// Create all the endpoints of our API.
 fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	// POST /check_email
-	warp::path("check_email")
+	let post_check_email = warp::path("check_email")
 		.and(warp::post())
 		// FIXME We should be able to just use warp::header::exact, and remove
 		// completely `./saasify_secret.rs`.
@@ -66,7 +67,15 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 		.and(warp::body::json())
 		.and_then(check_email)
 		// View access logs by setting `RUST_LOG=reacher`.
-		.with(warp::log("reacher"))
+		.with(warp::log("reacher"));
+
+	// GET /version
+	// This is mainly used for Heroku keep alive.
+	let get_version = warp::path("version")
+		.and(warp::get())
+		.map(|| CARGO_PKG_VERSION);
+
+	get_version.or(post_check_email)
 }
 
 /// Run a HTTP server using warp.
