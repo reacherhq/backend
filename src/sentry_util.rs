@@ -19,7 +19,7 @@ use check_if_email_exists::CheckEmailOutput;
 use sentry::protocol::{Event, Level, Value};
 use std::{collections::BTreeMap, env};
 
-const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Helper to add provider information (Serverless, Heroku) to Sentry events.
 fn add_provider_info(extra: &mut BTreeMap<String, Value>) {
