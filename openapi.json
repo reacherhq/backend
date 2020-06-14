@@ -75,33 +75,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "description": "Object containing parameters for the email verification.",
-                "properties": {
-                  "to_email": {
-                    "type": "string",
-                    "description": "The email address to check.",
-                    "format": "email",
-                    "example": "test@gmail.com"
-                  },
-                  "from_email": {
-                    "type": "string",
-                    "description": "In the SMTP connection, the FROM email address.",
-                    "format": "email"
-                  },
-                  "hello_name": {
-                    "type": "string",
-                    "description": "In the SMTP connection, the EHLO hostname.",
-                    "format": "hostname"
-                  }
-                },
-                "required": [
-                  "to_email"
-                ]
+                "$ref": "#/components/schemas/CheckEmailInput"
               }
             }
           },
-          "description": "Object containing parameters for the email verification."
+          "description": "Input containing all parameters necessary for an email verification."
         },
         "parameters": []
       }
@@ -207,10 +185,7 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "MiscError"
-            ],
-            "description": "Generic error type."
+            "description": "An error type."
           },
           "message": {
             "type": "string",
@@ -330,7 +305,29 @@
           "safe",
           "risky"
         ],
-        "description": "An enum to describe how confident we are that the recipient address is real."
+        "description": "An enum to describe how confident we are that the recipient address is real: `safe`, `risky`, `invalid` and `unknown`. Check our FAQ to know the meanings of the 4 possibilities: https://www.notion.so/reacherhq/Reacher-FAQ-389d6f51a53749f29d914239613c64eb."
+      },
+      "CheckEmailInput": {
+        "title": "CheckEmailInput",
+        "type": "object",
+        "description": "Input containing all parameters necessary for an email verification.",
+        "properties": {
+          "from_email": {
+            "type": "string",
+            "description": "In the SMTP connection, the FROM email address."
+          },
+          "to_email": {
+            "type": "string",
+            "description": "The email address to check."
+          },
+          "hello_name": {
+            "type": "string",
+            "description": "In the SMTP connection, the EHLO hostname."
+          }
+        },
+        "required": [
+          "to_email"
+        ]
       }
     },
     "securitySchemes": {}
