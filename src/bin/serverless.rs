@@ -23,7 +23,7 @@ use lambda_http::{
 use reacher_backend::{
 	check_email_serverless,
 	saasify_secret::{get_saasify_secret, IncorrectSaasifySecret, SAASIFY_SECRET_HEADER},
-	setup, ReacherInput, ReacherOutputError,
+	setup_sentry, ReacherInput, ReacherOutputError,
 };
 use std::fmt;
 
@@ -82,6 +82,8 @@ fn sanitize_input(request: Request) -> Result<ReacherInput, CheckEmailInputError
 /// options), return if email verification details as given by
 /// `check_if_email_exists`.
 async fn check_email(request: Request) -> Result<impl IntoResponse, Error> {
+	let _guard = setup_sentry();
+
 	let mut response = Response::builder();
 
 	// If request has origin, send back an access allow origin.
@@ -112,7 +114,6 @@ async fn check_email(request: Request) -> Result<impl IntoResponse, Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-	setup();
 	lambda::run(handler(check_email)).await?;
 	Ok(())
 }

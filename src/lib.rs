@@ -281,17 +281,17 @@ pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 }
 
 /// Setup logging and Sentry.
-pub fn setup() {
+pub fn setup_sentry() -> sentry::ClientInitGuard {
 	env_logger::init();
 
 	// Use an empty string if we don't have any env variable for sentry. Sentry
 	// will just silently ignore.
 	let sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
-	// Sentry will also catch panics.
-	sentry::integrations::panic::register_panic_handler();
 	if sentry.is_enabled() {
 		log::info!(target: "reacher", "Sentry is successfully set up.")
 	}
+
+	sentry
 }
 
 /// Struct describing an error response.
