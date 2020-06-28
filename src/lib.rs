@@ -22,7 +22,6 @@ use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
 	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
-use http_types::headers::HeaderName;
 use saasify_secret::get_saasify_secret;
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use serde_json::Value;
@@ -108,14 +107,8 @@ async fn check_serverless(
 	// If we're using Heroku option, then we make a HTTP call to Heroku.
 	if option == RetryOption::Heroku {
 		return match surf::post("https://reacher-us-1.herokuapp.com/check_email")
-			.set_header(
-				"Content-Type".parse::<HeaderName>().unwrap(),
-				"application/json",
-			)
-			.set_header(
-				"x-saasify-proxy-secret".parse::<HeaderName>().unwrap(),
-				get_saasify_secret(),
-			)
+			.set_header("Content-Type", "application/json")
+			.set_header("x-saasify-proxy-secret", get_saasify_secret())
 			.body_json(&body)
 			.expect("We made sure the body is correct. qed.")
 			.recv_json()
