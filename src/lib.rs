@@ -164,6 +164,7 @@ async fn check_serverless(
 				if (
 					// 5.7.1 IP address blacklisted by recipient
 					// 5.7.1 Service unavailable; Client host [147.75.45.223] is blacklisted. Visit https://www.sophos.com/en-us/threat-center/ip-lookup.aspx?ip=147.75.45.223 to request delisting
+					// 5.3.0 <aaro.peramaa@helsinki.fi>... Mail from 147.75.45.223 rejected by Abusix blacklist
 					response.message[0].to_lowercase().contains("blacklist") ||
 					// Unable to add <EMAIL> because host 23.129.64.184 is listed on zen.spamhaus.org
 					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
