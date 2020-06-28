@@ -162,27 +162,41 @@ async fn check_serverless(
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
 				if (
-					// Unable to add <email> because host 23.129.64.184 is listed on zen.spamhaus.org
+					// 5.7.1 IP address blacklisted by recipient
+					// 5.7.1 Service unavailable; Client host [147.75.45.223] is blacklisted. Visit https://www.sophos.com/en-us/threat-center/ip-lookup.aspx?ip=147.75.45.223 to request delisting
+					response.message[0].to_lowercase().contains("blacklist") ||
+					// Unable to add <EMAIL> because host 23.129.64.184 is listed on zen.spamhaus.org
 					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
 					// 5.7.1 Email cannot be delivered. Reason: Email detected as Spam by spam filters.
 					response.message[0].to_lowercase().contains("spam") ||
+					// 5.7.1 <unknown[23.129.64.100]>: Client host rejected: Access denied
+					response.message[0].to_lowercase().contains("access denied") ||
 					// 5.7.606 Access denied, banned sending IP [23.129.64.216]
 					response.message[0].to_lowercase().contains("banned") ||
 					// Blocked - see https://ipcheck.proofpoint.com/?ip=23.129.64.192
 					// 5.7.1 Mail from 23.129.64.183 has been blocked by Trend Micro Email Reputation Service.
 					response.message[0].to_lowercase().contains("blocked") ||
+					// Connection rejected by policy [7.3] 38206, please visit https://support.symantec.com/en_US/article.TECH246726.html for more details about this error message.
+					response.message[0].to_lowercase().contains("connection rejected") ||
 					// 5.7.1 Client host rejected: cannot find your reverse hostname, [23.129.64.184]
-					response.message[0].to_lowercase().contains("cannot find your reverse hostname")
+					response.message[0].to_lowercase().contains("cannot find your reverse hostname") ||
+					// Your access to this mail system has been rejected due to the sending MTA\'s poor reputation. If you believe that this failure is in error, please contact the intended recipient via alternate means.
+					(response.message.len() >= 2 && response.message[1].to_lowercase().contains("rejected"))
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// We retry, once with Tor, once with heroku...
+				// We retry, once with Tor, once with Heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 				if (
-					// 4.7.1 <email>: Relay access denied
+					// Blocked - see https://www.spamcop.net/bl.shtml?23.129.64.211
+					response.message[0].to_lowercase().contains("blocked") ||
+					// 4.7.1 <EMAIL>: Relay access denied
 					response.message[0].to_lowercase().contains("access denied") ||
+					// 4.7.25 Client host rejected: cannot find your hostname, [147.75.45.223]
+					// 4.7.1 Client host rejected: cannot find your reverse hostname, [147.75.45.223]
+					response.message[0].to_lowercase().contains("host rejected") ||
 					// relay not permitted!
 					response.message[0].to_lowercase().contains("relay not permitted") ||
 					// 23.129.64.216 is not yet authorized to deliver mail from
@@ -190,7 +204,7 @@ async fn check_serverless(
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// We retry, once with Tor, once with heroku...
+				// We retry, once with Tor, once with Heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(error)) => {
