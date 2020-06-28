@@ -116,7 +116,11 @@ async fn check_serverless(
 		{
 			Ok(result) => (ReacherOutput::Json(result), option),
 			Err(err) => {
-				sentry_util::error(err.to_string(), None, option);
+				sentry_util::error(
+					format!("Heroku response error: {}", err.to_string()),
+					None,
+					option,
+				);
 
 				check_serverless(body, count - 1, RetryOption::Tor).await
 			}
