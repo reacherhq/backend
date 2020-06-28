@@ -263,9 +263,10 @@ pub async fn check_email_heroku(body: ReacherInput) -> ReacherOutput {
 /// The main `check_email` function, on Serverless.
 pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 	// Run `ciee_check_email` with retries if necessary. Also measure the
-	// verification time.
+	// verification time. The count is set to 4, so that we try twice with Tor,
+	// twice with Heroku, and thus bypass greylisting.
 	let now = Instant::now();
-	let (result, option) = check_serverless(body, 3, RetryOption::Tor).await;
+	let (result, option) = check_serverless(body, 4, RetryOption::Tor).await;
 
 	// Note: This will not log if we made a request to Heroku.
 	// FIXME: We should also log if we used RetryOption::Heroku.
