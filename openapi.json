@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Reacher",
-    "version": "0.3",
+    "version": "0.2",
     "description": "Reacher backend OpenAPIv3 specification.",
     "license": {
       "name": "AGPL-3.0",
