@@ -114,6 +114,7 @@ async fn check_email(request: Request) -> Result<impl IntoResponse, Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+	env_logger::init();
 	lambda::run(handler(check_email)).await?;
 	Ok(())
 }
