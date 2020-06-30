@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.4](https://github.com/reacherhq/backend/compare/v0.2.3...v0.2.4) (2020-06-30)
+
+
+### Features
+
+* Add /version to heroku ([#82](https://github.com/reacherhq/backend/issues/82)) ([c619970](https://github.com/reacherhq/backend/commit/c619970ad6a67e6b3d6faf561dacae6dd1564f71))
+* Deploy to serverless ([#80](https://github.com/reacherhq/backend/issues/80)) ([cbe7220](https://github.com/reacherhq/backend/commit/cbe7220d3dab47e627458ee8eb770b7704a99520))
+
+
+### Bug Fixes
+
+* Update packages and add more Sentry error checks ([#94](https://github.com/reacherhq/backend/issues/94)) ([e1141dd](https://github.com/reacherhq/backend/commit/e1141dd5a5116af0c1cd4b11b11058741efb4c02))
+* **openapi:** Add input schema, fix descriptions ([#84](https://github.com/reacherhq/backend/issues/84)) ([ddc137c](https://github.com/reacherhq/backend/commit/ddc137c305d138ac63efbc7cdc68802fb8794154))
+* Better loggin for staging vs prod ([#77](https://github.com/reacherhq/backend/issues/77)) ([044b1e4](https://github.com/reacherhq/backend/commit/044b1e4c46995d374b8ddaafa91df99b41912f39))
+
 ### [0.2.3](https://github.com/reacherhq/backend/compare/v0.2.2...v0.2.3) (2020-05-30)
 
 
