@@ -6,17 +6,18 @@
     "description": "Reacher backend OpenAPIv3 specification.",
     "license": {
       "name": "AGPL-3.0",
-      "url": "https://github.com/reacherhq/microservices/blob/master/LICENSE"
+      "url": "https://github.com/reacherhq/backend/blob/master/LICENSE"
     },
     "contact": {
       "name": "Reacher",
-      "url": "https://reacher.github.io"
+      "url": "https://reacher.email",
+      "email": "amaury@reacher.email"
     }
   },
   "servers": [
     {
-      "url": "https://reacher.fly.dev",
-      "description": "Powered by Fly"
+      "url": "https://3wn2qx3bx5.execute-api.us-east-1.amazonaws.com/production/v0",
+      "description": "Hosted by AWS Lambda"
     }
   ],
   "paths": {
@@ -81,8 +82,19 @@
           },
           "description": "Input containing all parameters necessary for an email verification."
         },
-        "parameters": []
-      }
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "x-saasify-proxy-secret",
+            "description": "Secret key to only allow requests coming from Saasify.",
+            "required": true
+          }
+        ]
+      },
+      "parameters": []
     }
   },
   "components": {

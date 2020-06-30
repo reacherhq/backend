@@ -22,7 +22,6 @@ use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{
 	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
-use http_types::headers::HeaderName;
 use saasify_secret::get_saasify_secret;
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use serde_json::Value;
@@ -103,19 +102,13 @@ async fn check_serverless(
 	count: u8,
 	option: RetryOption,
 ) -> (ReacherOutput, RetryOption) {
-	log::debug!(target: "reacher", "Retry #{} for {}, with proxy {:?}", count, body.to_email, option);
+	log::info!(target: "reacher", "Retry #{}, with proxy {:?}", count, option);
 
 	// If we're using Heroku option, then we make a HTTP call to Heroku.
 	if option == RetryOption::Heroku {
 		return match surf::post("https://reacher-us-1.herokuapp.com/check_email")
-			.set_header(
-				"Content-Type".parse::<HeaderName>().unwrap(),
-				"application/json",
-			)
-			.set_header(
-				"x-saasify-proxy-secret".parse::<HeaderName>().unwrap(),
-				get_saasify_secret(),
-			)
+			.set_header("Content-Type", "application/json")
+			.set_header("x-saasify-proxy-secret", get_saasify_secret())
 			.body_json(&body)
 			.expect("We made sure the body is correct. qed.")
 			.recv_json()
@@ -123,7 +116,11 @@ async fn check_serverless(
 		{
 			Ok(result) => (ReacherOutput::Json(result), option),
 			Err(err) => {
-				sentry_util::error(err.to_string(), None, option);
+				sentry_util::error(
+					format!("Heroku response error: {}", err.to_string()),
+					None,
+					option,
+				);
 
 				check_serverless(body, count - 1, RetryOption::Tor).await
 			}
@@ -169,27 +166,42 @@ async fn check_serverless(
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
 				if (
-					// Unable to add <email> because host 23.129.64.184 is listed on zen.spamhaus.org
+					// 5.7.1 IP address blacklisted by recipient
+					// 5.7.1 Service unavailable; Client host [147.75.45.223] is blacklisted. Visit https://www.sophos.com/en-us/threat-center/ip-lookup.aspx?ip=147.75.45.223 to request delisting
+					// 5.3.0 <aaro.peramaa@helsinki.fi>... Mail from 147.75.45.223 rejected by Abusix blacklist
+					response.message[0].to_lowercase().contains("blacklist") ||
+					// Unable to add <EMAIL> because host 23.129.64.184 is listed on zen.spamhaus.org
 					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
 					// 5.7.1 Email cannot be delivered. Reason: Email detected as Spam by spam filters.
 					response.message[0].to_lowercase().contains("spam") ||
+					// 5.7.1 <unknown[23.129.64.100]>: Client host rejected: Access denied
+					response.message[0].to_lowercase().contains("access denied") ||
 					// 5.7.606 Access denied, banned sending IP [23.129.64.216]
 					response.message[0].to_lowercase().contains("banned") ||
 					// Blocked - see https://ipcheck.proofpoint.com/?ip=23.129.64.192
 					// 5.7.1 Mail from 23.129.64.183 has been blocked by Trend Micro Email Reputation Service.
 					response.message[0].to_lowercase().contains("blocked") ||
+					// Connection rejected by policy [7.3] 38206, please visit https://support.symantec.com/en_US/article.TECH246726.html for more details about this error message.
+					response.message[0].to_lowercase().contains("connection rejected") ||
 					// 5.7.1 Client host rejected: cannot find your reverse hostname, [23.129.64.184]
-					response.message[0].to_lowercase().contains("cannot find your reverse hostname")
+					response.message[0].to_lowercase().contains("cannot find your reverse hostname") ||
+					// Your access to this mail system has been rejected due to the sending MTA\'s poor reputation. If you believe that this failure is in error, please contact the intended recipient via alternate means.
+					(response.message.len() >= 2 && response.message[1].to_lowercase().contains("rejected"))
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// We retry, once with Tor, once with heroku...
+				// We retry, once with Tor, once with Heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 				if (
-					// 4.7.1 <email>: Relay access denied
+					// Blocked - see https://www.spamcop.net/bl.shtml?23.129.64.211
+					response.message[0].to_lowercase().contains("blocked") ||
+					// 4.7.1 <EMAIL>: Relay access denied
 					response.message[0].to_lowercase().contains("access denied") ||
+					// 4.7.25 Client host rejected: cannot find your hostname, [147.75.45.223]
+					// 4.7.1 Client host rejected: cannot find your reverse hostname, [147.75.45.223]
+					response.message[0].to_lowercase().contains("host rejected") ||
 					// relay not permitted!
 					response.message[0].to_lowercase().contains("relay not permitted") ||
 					// 23.129.64.216 is not yet authorized to deliver mail from
@@ -197,7 +209,7 @@ async fn check_serverless(
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
-				// We retry, once with Tor, once with heroku...
+				// We retry, once with Tor, once with Heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
 			(_, _, Err(error)) => {
@@ -255,9 +267,10 @@ pub async fn check_email_heroku(body: ReacherInput) -> ReacherOutput {
 /// The main `check_email` function, on Serverless.
 pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 	// Run `ciee_check_email` with retries if necessary. Also measure the
-	// verification time.
+	// verification time. The count is set to 4, so that we try twice with Tor,
+	// twice with Heroku, and thus bypass greylisting.
 	let now = Instant::now();
-	let (result, option) = check_serverless(body, 3, RetryOption::Tor).await;
+	let (result, option) = check_serverless(body, 4, RetryOption::Tor).await;
 
 	// Note: This will not log if we made a request to Heroku.
 	// FIXME: We should also log if we used RetryOption::Heroku.
@@ -273,17 +286,15 @@ pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 }
 
 /// Setup logging and Sentry.
-pub fn setup() {
-	env_logger::init();
-
+pub fn setup_sentry() -> sentry::ClientInitGuard {
 	// Use an empty string if we don't have any env variable for sentry. Sentry
 	// will just silently ignore.
 	let sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
-	// Sentry will also catch panics.
-	sentry::integrations::panic::register_panic_handler();
 	if sentry.is_enabled() {
 		log::info!(target: "reacher", "Sentry is successfully set up.")
 	}
+
+	sentry
 }
 
 /// Struct describing an error response.

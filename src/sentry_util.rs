@@ -30,6 +30,8 @@ fn add_provider_info(extra: &mut BTreeMap<String, Value>) {
 
 /// Helper function to send an Info event to Sentry.
 pub fn info(message: String, option: RetryOption, duration: u128) {
+	log::info!("Sending to Sentry: {}", message);
+
 	let mut extra = BTreeMap::new();
 
 	add_provider_info(&mut extra);
@@ -49,8 +51,7 @@ pub fn info(message: String, option: RetryOption, duration: u128) {
 
 /// Helper function to send an Error event to Sentry.
 pub fn error(message: String, result: Option<&CheckEmailOutput>, option: RetryOption) {
-	log::debug!("{}", message);
-
+	log::debug!("Sending to Sentry: {}", message);
 	let mut extra = BTreeMap::new();
 
 	add_provider_info(&mut extra);

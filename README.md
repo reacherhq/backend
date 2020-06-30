@@ -24,7 +24,7 @@ These are the environment variables used to configure the HTTP server:
 | Env Var              | Required? | Description                                                                        | Default              |
 | -------------------- | --------- | ---------------------------------------------------------------------------------- | -------------------- |
 | `RCH_FROM_EMAIL`     | No        | The email to use in the `MAIL FROM:` SMTP command.                                 | `user@example.org`   |
-| `RCH_HOST_HOST`      | No        | The host name to bind the HTTP server to.                                          | `127.0.0.1`          |
+| `RCH_HTTP_HOST`      | No        | The host name to bind the HTTP server to.                                          | `127.0.0.1`          |
 | `RCH_PROXY_HOST`     | No        | Use the specified SOCKS5 proxy host to perform email verification.                 | not defined          |
 | `RCH_PROXY_PORT`     | No        | Use the specified SOCKS5 proxy port to perform email verification.                 | not defined          |
 | `RCH_SAASIFY_SECRET` | No        | If set, all incoming requests will need to have a `x-saasify-proxy-secret` header. | `reacher_dev_secret` |

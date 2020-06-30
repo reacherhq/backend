@@ -44,7 +44,7 @@ functions:
   check-email:
     events:
       - http:
-          path: /check_email
+          path: /v0/check_email
           method: POST
           cors:
             origins:

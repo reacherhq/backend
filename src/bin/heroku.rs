@@ -18,7 +18,7 @@ use reacher_backend::{
 	check_email_heroku,
 	saasify_secret::{get_saasify_secret, IncorrectSaasifySecret, SAASIFY_SECRET_HEADER},
 	sentry_util::CARGO_PKG_VERSION,
-	setup, ReacherInput,
+	setup_sentry, ReacherInput,
 };
 use std::{convert::Infallible, env, net::IpAddr};
 use warp::http::StatusCode;
@@ -89,7 +89,8 @@ fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejecti
 /// is malformed, then the program will panic.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-	setup();
+	env_logger::init();
+	let _guard = setup_sentry();
 
 	let api = create_api();
 
