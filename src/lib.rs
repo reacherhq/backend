@@ -102,7 +102,7 @@ async fn check_serverless(
 	count: u8,
 	option: RetryOption,
 ) -> (ReacherOutput, RetryOption) {
-	log::debug!(target: "reacher", "Retry #{} for {}, with proxy {:?}", count, body.to_email, option);
+	log::info!(target: "reacher", "Retry #{}, with proxy {:?}", count, option);
 
 	// If we're using Heroku option, then we make a HTTP call to Heroku.
 	if option == RetryOption::Heroku {
