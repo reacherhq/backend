@@ -43,7 +43,9 @@ impl Into<CheckEmailInput> for ReacherInput {
 			.from_email(self.from_email.unwrap_or_else(|| {
 				env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
 			}))
-			.hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()));
+			.hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()))
+			// FIXME https://github.com/reacherhq/backend/issues/98
+			.yahoo_use_api(false);
 
 		input
 	}
@@ -174,6 +176,8 @@ async fn check_serverless(
 					// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
 					// 5.7.1 Email cannot be delivered. Reason: Email detected as Spam by spam filters.
 					response.message[0].to_lowercase().contains("spam") ||
+					// host 23.129.64.216 is listed at combined.mail.abusix.zone (127.0.0.12,
+					response.message[0].to_lowercase().contains("abusix") ||
 					// 5.7.1 <unknown[23.129.64.100]>: Client host rejected: Access denied
 					response.message[0].to_lowercase().contains("access denied") ||
 					// 5.7.606 Access denied, banned sending IP [23.129.64.216]
@@ -209,6 +213,18 @@ async fn check_serverless(
 				) =>
 			{
 				log::debug!(target: "reacher", "{}", response.message[0]);
+				// We retry, once with Tor, once with Heroku...
+				check_serverless(body, count - 1, option.rotate()).await
+			}
+			(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Io(error))))
+				if (
+					// code: 104, kind: ConnectionReset, message: "Connection reset by peer",
+					error.raw_os_error() == Some(104) ||
+					// kind: Other, error: "incomplete",
+					error.to_string() == "incomplete"
+				) =>
+			{
+				log::debug!(target: "reacher", "{}", error);
 				// We retry, once with Tor, once with Heroku...
 				check_serverless(body, count - 1, option.rotate()).await
 			}
