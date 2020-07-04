@@ -23,6 +23,7 @@ use check_if_email_exists::{
 	check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput, CheckEmailOutput, Reachable,
 };
 use saasify_secret::get_saasify_secret;
+use sentry_util::CARGO_PKG_VERSION;
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use std::{env, fmt, time::Instant};
@@ -303,6 +304,8 @@ pub async fn check_email_serverless(body: ReacherInput) -> ReacherOutput {
 
 /// Setup logging and Sentry.
 pub fn setup_sentry() -> sentry::ClientInitGuard {
+	log::info!(target: "reacher", "Running Reacher v{}", CARGO_PKG_VERSION);
+
 	// Use an empty string if we don't have any env variable for sentry. Sentry
 	// will just silently ignore.
 	let sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
