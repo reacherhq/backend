@@ -7,8 +7,7 @@ on:
 
 jobs:
   # Deploy the code to Serverless.
-  serverless-staging:
-    name: deploy
+  serverless-production:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
