@@ -23,7 +23,7 @@ use crate::{
 use async_recursion::async_recursion;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{check_email as ciee_check_email, smtp::SmtpError, CheckEmailInput};
-
+use serde_json::Value;
 use std::{env, time::Instant};
 
 /// A recursive async function to retry the `ciee_check_email` function
@@ -50,11 +50,39 @@ async fn retry(body: ReacherInput, count: u8, option: RetryOption) -> (ReacherOu
 			.recv_json()
 			.await
 		{
-			Ok(result) => (ReacherOutput::Json(result), option),
+			Ok(result) => {
+				// Parse Heroku's result, to see what `is_reachable` we got.
+				let result: Value = result; // FIXME Why is this line needed?
+				let is_reachable = result
+					.as_object()
+					.and_then(|obj| obj.get("is_reachable"))
+					.and_then(|is_reachable| is_reachable.as_str());
+
+				match is_reachable {
+					Some(is_reachable) => {
+						// If Heroku also returns "unknown", then we retry.
+						if is_reachable == "unknown" {
+							retry(body, count - 1, RetryOption::Tor).await
+						} else {
+							(ReacherOutput::Json(result), option)
+						}
+					}
+					// If somehow we couldn't parse the Heroku response, we retry.
+					None => {
+						sentry_util::error(
+							format!("Heroku cannot parse response"),
+							Some(format!("{:#?}", result).as_ref()),
+							RetryOption::Heroku,
+						);
+
+						retry(body, count - 1, RetryOption::Tor).await
+					}
+				}
+			}
 			Err(err) => {
 				sentry_util::error(
-					format!("Heroku response error: {}", err.to_string()),
-					None,
+					format!("Heroku not returning 200: {}", err.to_string()),
+					Some(format!("{:#?}", err).as_ref()),
 					option,
 				);
 
@@ -88,14 +116,22 @@ async fn retry(body: ReacherInput, count: u8, option: RetryOption) -> (ReacherOu
 		match (&result.misc, &result.mx, &result.smtp) {
 			(Err(error), _, _) => {
 				// We log misc errors.
-				sentry_util::error(format!("{:?}", error), Some(&result), option);
+				sentry_util::error(
+					format!("{:?}", error),
+					Some(format!("{:#?}", result).as_ref()),
+					option,
+				);
 
 				// We retry once again.
 				retry(body, count - 1, option).await
 			}
 			(_, Err(error), _) => {
 				// We log mx errors.
-				sentry_util::error(format!("{:?}", error), Some(&result), option);
+				sentry_util::error(
+					format!("{:?}", error),
+					Some(format!("{:#?}", result).as_ref()),
+					option,
+				);
 
 				// We retry once again.
 				retry(body, count - 1, option).await
@@ -126,7 +162,11 @@ async fn retry(body: ReacherInput, count: u8, option: RetryOption) -> (ReacherOu
 				// Sentry, to be able to debug them better. We don't want to
 				// spam Sentry and log all instances of the error, hence the
 				// `count` check.
-				sentry_util::error(format!("{:?}", error), Some(&result), option);
+				sentry_util::error(
+					format!("{:?}", error),
+					Some(format!("{:#?}", result).as_ref()),
+					option,
+				);
 
 				// We retry, once with Tor, once with heroku...
 				retry(body, count - 1, option.rotate()).await
