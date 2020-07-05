@@ -53,6 +53,8 @@ pub fn has_smtp_permanent_errors(message: &Vec<String>) -> bool {
     first_line.contains("connection rejected") ||
     // 5.7.1 Client host rejected: cannot find your reverse hostname, [23.129.64.184]
     first_line.contains("cannot find your reverse hostname") ||
+    // csi.mimecast.org Poor Reputation Sender. - https://community.mimecast.com/docs/DOC-1369#550 [6ATVl4DjOvSA6XNsWGoUFw.us31]
+    first_line.contains("poor reputation") ||
     // Your access to this mail system has been rejected due to the sending MTA\'s poor reputation. If you believe that this failure is in error, please contact the intended recipient via alternate means.
     (message.len() >= 2 && message[1].contains("rejected"))
 }
