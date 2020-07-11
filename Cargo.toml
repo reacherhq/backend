@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 async-recursion = "0.3"
 async-smtp = { version = "0.3", features = ["socks5"] }
-check-if-email-exists = { git = "https://github.com/amaurymartiny/check-if-email-exists", branch = "am-yahoo-proxy" }
+check-if-email-exists = "0.8"
 env_logger = "0.7"
 lambda_http = { git = "https://github.com/awslabs/aws-lambda-rust-runtime/", branch = "master"}
 log = "0.4"

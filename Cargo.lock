@@ -416,13 +416,13 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "check-if-email-exists"
 version = "0.8.11"
-source = "git+https://github.com/amaurymartiny/check-if-email-exists?branch=am-yahoo-proxy#0091b5e8b3fa09085688925ec5fe6d2e1b6dac99"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d030cd89567f9d9c065c135e50fcdad0cb0295e2cff2110aef034902e3336116"
 dependencies = [
  "async-smtp",
  "async-std-resolver",
  "fast-socks5",
  "futures 0.3.5",
- "http-types",
  "log 0.4.8",
  "mailchecker",
  "rand 0.7.3",
