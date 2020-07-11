@@ -416,7 +416,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "check-if-email-exists"
 version = "0.8.11"
-source = "git+https://github.com/amaurymartiny/check-if-email-exists?branch=am-yahoo-proxy#c456850bf9214352d9a8f115726eb2c943ff2373"
+source = "git+https://github.com/amaurymartiny/check-if-email-exists?branch=am-yahoo-proxy#0091b5e8b3fa09085688925ec5fe6d2e1b6dac99"
 dependencies = [
  "async-smtp",
  "async-std-resolver",
