@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.5](https://github.com/reacherhq/backend/compare/v0.2.4...v0.2.5) (2020-07-11)
+
+
+### Bug Fixes
+
+* Update check-if-email-exists, use proxy in Yahoo API ([#99](https://github.com/reacherhq/backend/issues/99)) ([93cc16f](https://github.com/reacherhq/backend/commit/93cc16f59b078d113900ee7c697c1066bde0ef7e))
+
 ### [0.2.4](https://github.com/reacherhq/backend/compare/v0.2.3...v0.2.4) (2020-06-30)
 
 
