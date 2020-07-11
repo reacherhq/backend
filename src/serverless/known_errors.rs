@@ -36,6 +36,8 @@ pub fn has_smtp_permanent_errors(message: &Vec<String>) -> bool {
 	// 5.7.1 Service unavailable; Client host [147.75.45.223] is blacklisted. Visit https://www.sophos.com/en-us/threat-center/ip-lookup.aspx?ip=147.75.45.223 to request delisting
 	// 5.3.0 <aaro.peramaa@helsinki.fi>... Mail from 147.75.45.223 rejected by Abusix blacklist
 	first_line.contains("blacklist") ||
+    // Rejected because 23.129.64.213 is in a black list at b.barracudacentral.org
+    first_line.contains("black list") || 
     // Unable to add <EMAIL> because host 23.129.64.184 is listed on zen.spamhaus.org
     // 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
     // 5.7.1 Email cannot be delivered. Reason: Email detected as Spam by spam filters.
