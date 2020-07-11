@@ -29,7 +29,7 @@ pub fn has_smtp_io_errors(error: &IoError) -> bool {
 }
 
 /// Check if the message contains known SMTP Permanent errors.
-pub fn has_smtp_permanent_errors(message: &Vec<String>) -> bool {
+pub fn has_smtp_permanent_errors(message: &[String]) -> bool {
 	let first_line = message[0].to_lowercase();
 
 	// 5.7.1 IP address blacklisted by recipient
@@ -62,7 +62,7 @@ pub fn has_smtp_permanent_errors(message: &Vec<String>) -> bool {
 }
 
 /// Check if the message contains known SMTP Transient errors.
-pub fn has_smtp_transient_errors(message: &Vec<String>) -> bool {
+pub fn has_smtp_transient_errors(message: &[String]) -> bool {
 	let first_line = message[0].to_lowercase();
 
 	// Blocked - see https://www.spamcop.net/bl.shtml?23.129.64.211

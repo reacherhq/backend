@@ -73,7 +73,7 @@ async fn retry(body: ReacherInput, count: u8, option: RetryOption) -> (ReacherOu
 							// If somehow we couldn't parse the Heroku response, we retry.
 							None => {
 								sentry_util::error(
-									format!("Heroku cannot parse response"),
+									"Heroku cannot parse response".to_string(),
 									Some(format!("{:#?}", result).as_ref()),
 									RetryOption::Heroku,
 								);
