@@ -41,9 +41,7 @@ impl Into<CheckEmailInput> for ReacherInput {
 			.from_email(self.from_email.unwrap_or_else(|| {
 				env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
 			}))
-			.hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()))
-			// FIXME https://github.com/reacherhq/backend/issues/98
-			.yahoo_use_api(false);
+			.hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
 		input
 	}
