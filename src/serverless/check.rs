@@ -42,37 +42,50 @@ async fn retry(body: ReacherInput, count: u8, option: RetryOption) -> (ReacherOu
 
 	// If we're using Heroku option, then we make a HTTP call to Heroku.
 	if option == RetryOption::Heroku {
-		return match surf::post("https://reacher-us-1.herokuapp.com/check_email")
-			.set_header("Content-Type", "application/json")
-			.set_header("x-saasify-proxy-secret", get_saasify_secret())
-			.body_json(&body)
-			.expect("We made sure the body is correct. qed.")
-			.recv_json()
+		return match reqwest::Client::new()
+			.post("https://reacher-us-1.herokuapp.com/check_email")
+			.header("Content-Type", "application/json")
+			.header("x-saasify-proxy-secret", get_saasify_secret())
+			.json(&body)
+			.send()
 			.await
 		{
-			Ok(result) => {
+			Ok(response) => {
 				// Parse Heroku's result, to see what `is_reachable` we got.
-				let result: Value = result; // FIXME Why is this line needed?
-				let is_reachable = result
-					.as_object()
-					.and_then(|obj| obj.get("is_reachable"))
-					.and_then(|is_reachable| is_reachable.as_str());
+				match response.json().await {
+					Ok(result) => {
+						// Parse Heroku's result, to see what `is_reachable` we got.
+						let result: Value = result; // FIXME Why is this line needed?
+						let is_reachable = result
+							.as_object()
+							.and_then(|obj| obj.get("is_reachable"))
+							.and_then(|is_reachable| is_reachable.as_str());
 
-				match is_reachable {
-					Some(is_reachable) => {
-						// If Heroku also returns "unknown", then we retry.
-						if is_reachable == "unknown" {
-							retry(body, count - 1, RetryOption::Tor).await
-						} else {
-							(ReacherOutput::Json(result), option)
+						match is_reachable {
+							Some(is_reachable) => {
+								// If Heroku also returns "unknown", then we retry.
+								if is_reachable == "unknown" {
+									retry(body, count - 1, RetryOption::Tor).await
+								} else {
+									(ReacherOutput::Json(result), option)
+								}
+							}
+							// If somehow we couldn't parse the Heroku response, we retry.
+							None => {
+								sentry_util::error(
+									format!("Heroku cannot parse response"),
+									Some(format!("{:#?}", result).as_ref()),
+									RetryOption::Heroku,
+								);
+								retry(body, count - 1, RetryOption::Tor).await
+							}
 						}
 					}
-					// If somehow we couldn't parse the Heroku response, we retry.
-					None => {
+					Err(err) => {
 						sentry_util::error(
-							format!("Heroku cannot parse response"),
-							Some(format!("{:#?}", result).as_ref()),
-							RetryOption::Heroku,
+							format!("Cannot deserialize Heroku response: {}", err.to_string()),
+							Some(format!("{:#?}", err).as_ref()),
+							option,
 						);
 
 						retry(body, count - 1, RetryOption::Tor).await
