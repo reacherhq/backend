@@ -416,7 +416,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "check-if-email-exists"
 version = "0.8.11"
-source = "git+https://github.com/amaurymartiny/check-if-email-exists?branch=am-yahoo-proxy#fcdec1fafe26e481356e394169f8845be491dea3"
+source = "git+https://github.com/amaurymartiny/check-if-email-exists?branch=am-yahoo-proxy#c456850bf9214352d9a8f115726eb2c943ff2373"
 dependencies = [
  "async-smtp",
  "async-std-resolver",
@@ -427,9 +427,9 @@ dependencies = [
  "mailchecker",
  "rand 0.7.3",
  "regex",
+ "reqwest",
  "serde",
  "serde_json",
- "surf",
  "trust-dns-proto",
 ]
 
@@ -604,6 +604,12 @@ name = "dtoa"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134951f4028bdadb9b84baf4232681efbf277da25144b9b0ad65df75946c422b"
+
+[[package]]
+name = "either"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 
 [[package]]
 name = "encoding_rs"
@@ -2136,6 +2142,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "tokio",
+ "tokio-socks",
  "tokio-tls",
  "url",
  "wasm-bindgen",
@@ -2802,6 +2809,19 @@ dependencies = [
  "proc-macro2 1.0.18",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tokio-socks"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1997788a0e25e09300e44680ba1ef9d44d6f634a883641f80109e8b59c928daf"
+dependencies = [
+ "bytes 0.4.12",
+ "either",
+ "futures 0.3.5",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
