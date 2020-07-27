@@ -2354,6 +2354,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a41f40ed0e162c911ac6fcb53ecdc8134c46905fdbbae8c50add462a538b495f"
 dependencies = [
  "cfg-if",
+ "log 0.4.11",
  "tracing-attributes",
  "tracing-core",
 ]
@@ -2620,9 +2621,9 @@ dependencies = [
 
 [[package]]
 name = "warp"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e95175b7a927258ecbb816bdada3cc469cb68593e7940b96a60f4af366a9970"
+checksum = "df341dee97c9ae29dfa5e0b0fbbbf620e0d6a36686389bedf83b3daeb8b0d0ac"
 dependencies = [
  "bytes 0.5.5",
  "futures",
@@ -2641,6 +2642,8 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tower-service",
+ "tracing",
+ "tracing-futures",
  "urlencoding",
 ]
 
