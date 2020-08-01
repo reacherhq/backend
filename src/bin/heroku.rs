@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use reacher_backend::{heroku::warp::create_api, setup_sentry};
+use reacher_backend::{routes::create_routes, sentry_util::setup_sentry};
 use std::{env, net::IpAddr};
 
 /// Run a HTTP server using warp.
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 	let _guard = setup_sentry();
 
-	let api = create_api();
+	let routes = create_routes();
 
 	let host = env::var("RCH_HTTP_HOST")
 		.unwrap_or_else(|_| "127.0.0.1".into())
@@ -42,6 +42,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.unwrap_or(8080);
 	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
 
-	warp::serve(api).run((host, port)).await;
+	warp::serve(routes).run((host, port)).await;
 	Ok(())
 }

@@ -16,17 +16,24 @@
 
 //! Helper functions to send events to Sentry.
 
-use super::RetryOption;
-use sentry::protocol::{Event, Level, Value};
+use super::routes::check_email::RetryOption;
+use sentry::protocol::{Event, Level};
 use std::{collections::BTreeMap, env};
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Helper to add provider information (Serverless, Heroku) to Sentry events.
-fn add_provider_info(extra: &mut BTreeMap<String, Value>) {
-	if let Ok(reacher_provider) = env::var("RCH_PROVIDER") {
-		extra.insert("RCH_PROVIDER".into(), reacher_provider.into());
+/// Setup logging and Sentry.
+pub fn setup_sentry() -> sentry::ClientInitGuard {
+	log::info!(target: "reacher", "Running Reacher v{}", CARGO_PKG_VERSION);
+
+	// Use an empty string if we don't have any env variable for sentry. Sentry
+	// will just silently ignore.
+	let sentry = sentry::init(env::var("RCH_SENTRY_DSN").unwrap_or_else(|_| "".into()));
+	if sentry.is_enabled() {
+		log::info!(target: "reacher", "Sentry is successfully set up.")
 	}
+
+	sentry
 }
 
 /// Helper function to send an Info event to Sentry.
@@ -35,7 +42,6 @@ pub fn info(message: String, option: RetryOption, duration: u128) {
 
 	let mut extra = BTreeMap::new();
 
-	add_provider_info(&mut extra);
 	extra.insert("duration".into(), duration.to_string().into());
 	extra.insert("proxy_option".into(), option.to_string().into());
 
@@ -55,7 +61,6 @@ pub fn error(message: String, result: Option<&str>, option: RetryOption) {
 	log::debug!("Sending to Sentry: {}", message);
 	let mut extra = BTreeMap::new();
 
-	add_provider_info(&mut extra);
 	if let Some(result) = result {
 		extra.insert("CheckEmailOutput".into(), result.into());
 	}

@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod check;
-mod known_errors;
-pub mod lambda;
+pub mod check_email;
+mod version;
+
+use warp::Filter;
+
+pub fn create_routes() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	version::get_version().or(check_email::post_check_email())
+}
