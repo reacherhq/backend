@@ -14,6 +14,34 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod error;
-pub mod routes;
-pub mod sentry_util;
+//! Describe a common response error to be used by all routes, should an error
+//! happen.
+
+use serde::{ser::SerializeMap, Serialize, Serializer};
+use std::fmt;
+
+/// Struct describing an error response.
+#[derive(Debug)]
+pub struct ReacherResponseError<T> {
+	error: T,
+}
+
+impl<T> ReacherResponseError<T> {
+	pub fn new(error: T) -> Self {
+		ReacherResponseError { error }
+	}
+}
+
+impl<T> Serialize for ReacherResponseError<T>
+where
+	T: fmt::Display,
+{
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: Serializer,
+	{
+		let mut map = serializer.serialize_map(Some(1))?;
+		map.serialize_entry("error", &format!("{}", self.error))?;
+		map.end()
+	}
+}

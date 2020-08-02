@@ -16,11 +16,23 @@
 
 //! This file implements the `POST /check_email` endpoint.
 
-use crate::sentry_util;
-use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput};
+mod known_errors;
+
+use crate::{error::ReacherResponseError, sentry_util};
+use async_recursion::async_recursion;
+use async_std::future;
+use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};
+use futures::future::select_ok;
 use serde::{Deserialize, Serialize};
-use std::{convert::Infallible, env, fmt, time::Instant};
+use std::{
+	convert::Infallible,
+	env, fmt,
+	time::{Duration, Instant},
+};
 use warp::Filter;
+
+/// Timeout after which we drop the `check-if-email-exists` check.
+const TIMEOUT_THRESHOLD: u64 = 15;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -30,20 +42,6 @@ struct EndpointRequest {
 	to_email: String,
 }
 
-impl Into<CheckEmailInput> for EndpointRequest {
-	fn into(self) -> CheckEmailInput {
-		// Create Request for check_if_email_exists from body
-		let mut input = CheckEmailInput::new(vec![self.to_email]);
-		input
-			.from_email(self.from_email.unwrap_or_else(|| {
-				env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
-			}))
-			.hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()));
-
-		input
-	}
-}
-
 /// This option represents how we should execute the SMTP connection to check
 /// an email.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -51,7 +49,7 @@ pub enum RetryOption {
 	/// Use Tor to connect to the SMTP server.
 	Tor,
 	/// Heroku connects to the SMTP server directly.
-	Heroku,
+	Direct,
 }
 
 impl fmt::Display for RetryOption {
@@ -60,24 +58,131 @@ impl fmt::Display for RetryOption {
 	}
 }
 
+/// Converts an endpoint request body into a CheckEmailInput to be passed into
+/// check_if_email_exists.
+fn create_check_email_input(
+	body: &EndpointRequest,
+	use_tor: bool,
+) -> (CheckEmailInput, RetryOption) {
+	// FIXME Can we not clone?
+	let body = body.clone();
+
+	// Create Request for check_if_email_exists from body
+	let mut input = CheckEmailInput::new(vec![body.to_email]);
+	input
+		.from_email(body.from_email.unwrap_or_else(|| {
+			env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
+		}))
+		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
+
+	// If `use_tor` and relevant ENV vars are set, we proxy.
+	if use_tor {
+		if let (Ok(proxy_host), Ok(proxy_port)) =
+			(env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT"))
+		{
+			if let Ok(proxy_port) = proxy_port.parse::<u16>() {
+				input.proxy(proxy_host, proxy_port);
+			}
+		}
+	}
+
+	let retry_option = if use_tor {
+		RetryOption::Tor
+	} else {
+		RetryOption::Direct
+	};
+	(input, retry_option)
+}
+
+/// Run `ciee_check_email` function with a `TIMEOUT_THRESHOLD`-second timeout.
+async fn check_email_with_timeout(
+	input: CheckEmailInput,
+	retry_option: RetryOption,
+) -> Result<(CheckEmailOutput, RetryOption), future::TimeoutError> {
+	future::timeout(
+		Duration::from_secs(TIMEOUT_THRESHOLD),
+		ciee_check_email(&input),
+	)
+	.await
+	.map(|mut results| {
+		(
+			results.pop().expect("The input has one email. qed."),
+			retry_option,
+		)
+	})
+}
+
+/// Retry the check ciee_check_email function, in particular to avoid
+/// greylisting.
+#[async_recursion]
+async fn retry(
+	body: &EndpointRequest,
+	count: usize,
+) -> Result<CheckEmailOutput, future::TimeoutError> {
+	// Create 2 futures:
+	// - one connecting directly to the SMTP server,
+	// - the other one connecting to it via Tor.
+	// Then race these 2 futures.
+	let futures = vec![
+		create_check_email_input(body, true),
+		create_check_email_input(body, false),
+	]
+	.into_iter()
+	.map(|(input, retry_option)| {
+		let fut = check_email_with_timeout(input, retry_option);
+		// https://rust-lang.github.io/async-book/04_pinning/01_chapter.html
+		Box::pin(fut)
+	});
+
+	match select_ok(futures).await {
+		Ok(((result, retry_option), _)) => {
+			if known_errors::has_known_errors(&result, retry_option) {
+				if count <= 1 {
+					Ok(result)
+				} else {
+					retry(body, count - 1).await
+				}
+			} else {
+				Ok(result)
+			}
+		}
+		Err(err) => {
+			if count <= 1 {
+				Err(err)
+			} else {
+				retry(body, count - 1).await
+			}
+		}
+	}
+}
+
 /// The main `check_email` function that implements the logic of this route.
 async fn check_email(body: EndpointRequest) -> Result<impl warp::Reply, Infallible> {
 	// Run `ciee_check_email` with retries if necessary. Also measure the
 	// verification time.
 	let now = Instant::now();
-	let result = ciee_check_email(&body.into())
-		.await
-		.pop()
-		.expect("The input has one element, so does the output. qed.");
+	// We retry checking the email twice, to avoid greylisting.
+	let result = retry(&body, 2).await;
 
-	// Log on Sentry
-	sentry_util::info(
-		format!("is_reachable={:?}", result.is_reachable),
-		RetryOption::Heroku,
-		now.elapsed().as_millis(),
-	);
+	let response = match result {
+		Ok(value) => {
+			// Log on Sentry the `is_reachable` field.
+			// FIXME We should definitely log this somehwere else than Sentry.
+			sentry_util::info(
+				format!("is_reachable={:?}", value.is_reachable),
+				RetryOption::Direct,
+				now.elapsed().as_millis(),
+			);
+			warp::reply::json(&value)
+		}
+		Err(err) => {
+			sentry_util::error(format!("POST /check_email error: {}", err), None, None);
 
-	Ok(warp::reply::json(&result))
+			warp::reply::json(&ReacherResponseError::new(err))
+		}
+	};
+
+	Ok(response)
 }
 
 /// Create the `POST /check_email` endpoint.

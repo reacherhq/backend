@@ -57,14 +57,16 @@ pub fn info(message: String, option: RetryOption, duration: u128) {
 }
 
 /// Helper function to send an Error event to Sentry.
-pub fn error(message: String, result: Option<&str>, option: RetryOption) {
+pub fn error(message: String, result: Option<&str>, retry_option: Option<RetryOption>) {
 	log::debug!("Sending to Sentry: {}", message);
 	let mut extra = BTreeMap::new();
 
 	if let Some(result) = result {
 		extra.insert("CheckEmailOutput".into(), result.into());
 	}
-	extra.insert("proxy_option".into(), option.to_string().into());
+	if let Some(retry_option) = retry_option {
+		extra.insert("proxy_option".into(), retry_option.to_string().into());
+	}
 
 	sentry::capture_event(Event {
 		extra,
