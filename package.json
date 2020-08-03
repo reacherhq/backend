@@ -10,7 +10,7 @@
 		"test": "serverless invoke local -f check-if-email-exists-serverless -d \"$(cat test/payload.json)\""
 	},
 	"devDependencies": {
-		"serverless": "^1.76.1",
+		"serverless": "^1.77.1",
 		"serverless-rust": "^0.3.8"
 	}
 }
