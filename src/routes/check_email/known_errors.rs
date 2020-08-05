@@ -18,7 +18,7 @@
 //! `check-if-email-exists` are known errors, in which case we don't log them
 //! to Sentry.
 
-use super::RetryOption;
+use super::post::RetryOption;
 use crate::sentry_util;
 use async_smtp::smtp::error::Error as AsyncSmtpError;
 use check_if_email_exists::{smtp::SmtpError, CheckEmailOutput};

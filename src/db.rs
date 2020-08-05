@@ -14,5 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod known_errors;
-pub mod post;
+use diesel::pg::PgConnection;
+
+pub fn connect_db() -> PgConnection {
+	let database_url = env::var("RCH_DATABASE_URL").expect("RCH_DATABASE_URL must be set. qed.");
+	PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+}

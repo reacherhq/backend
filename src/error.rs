@@ -18,30 +18,54 @@
 //! happen.
 
 use serde::{ser::SerializeMap, Serialize, Serializer};
-use std::fmt;
+use std::convert::Infallible;
+use warp::{http, reject};
 
 /// Struct describing an error response.
 #[derive(Debug)]
-pub struct ReacherResponseError<T> {
-	error: T,
+pub struct ReacherResponseError {
+	code: http::StatusCode,
+	message: String,
 }
 
-impl<T> ReacherResponseError<T> {
-	pub fn new(error: T) -> Self {
-		ReacherResponseError { error }
+impl ReacherResponseError {
+	pub fn new(code: http::StatusCode, message: String) -> Self {
+		ReacherResponseError { code, message }
 	}
 }
 
-impl<T> Serialize for ReacherResponseError<T>
-where
-	T: fmt::Display,
-{
+impl Serialize for ReacherResponseError {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: Serializer,
 	{
-		let mut map = serializer.serialize_map(Some(1))?;
-		map.serialize_entry("error", &format!("{}", self.error))?;
+		let mut map = serializer.serialize_map(Some(2))?;
+		map.serialize_entry("code", &format!("{}", self.code))?;
+		map.serialize_entry("error", &format!("{}", self.message))?;
 		map.end()
+	}
+}
+
+impl reject::Reject for ReacherResponseError {}
+
+/// This function receives a `Rejection` and tries to return a custom value,
+/// otherwise simply passes the rejection along.
+async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, Infallible> {
+	let response: &ReacherResponseError;
+	if let Some(err) = err.find::<ReacherResponseError>() {
+		Ok(warp::reply::with_status(warp::reply::json(err), err.code))
+	} else {
+		// We should have expected this... Just log and say its a 500.
+		log::error!(target:"reacher", "Unhandled rejection: {:?}", err);
+
+		let response = ReacherResponseError {
+			code: http::StatusCode::INTERNAL_SERVER_ERROR,
+			message: format!("Unhandled rejection: {:?}", err),
+		};
+
+		Ok(warp::reply::with_status(
+			warp::reply::json(&response),
+			response.code,
+		))
 	}
 }

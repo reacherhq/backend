@@ -20,5 +20,5 @@ mod version;
 use warp::Filter;
 
 pub fn create_routes() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-	version::get_version().or(check_email::post_check_email())
+	version::get::get_version().or(check_email::post::post_check_email())
 }
