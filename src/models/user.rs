@@ -15,10 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use super::schema::users;
+use uuid::Uuid;
 
 #[derive(Debug, Identifiable, PartialEq, Queryable)]
 #[table_name = "users"]
 pub struct User {
-	pub id: String,
+	pub id: Uuid,
 	pub stripe_customer: String,
 }

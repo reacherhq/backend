@@ -15,13 +15,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use super::schema::api_tokens;
+use crate::diesel::ExpressionMethods;
+use diesel::{pg::PgConnection, prelude::*, QueryResult};
+use uuid::Uuid;
 
 #[derive(Associations, Debug, Identifiable, PartialEq, Queryable)]
 #[belongs_to(super::user::User)]
 #[table_name = "api_tokens"]
 pub struct ApiToken {
-	pub id: String,
-	pub api_token: String,
+	pub id: i32,
+	pub api_token: Uuid,
 	pub stripe_subscription_item: String,
-	pub user_id: String,
+	pub user_id: Uuid,
+}
+
+/// Get one API token by its UUID.
+pub fn find_one_by_api_token<'a>(conn: &PgConnection, token: &Uuid) -> QueryResult<ApiToken> {
+	use super::schema::api_tokens::dsl::*;
+
+	api_tokens.filter(api_token.eq(token)).first(conn)
 }

@@ -16,14 +16,41 @@
 
 use super::schema::api_usage_records;
 use chrono::NaiveDateTime;
+use diesel::{pg::PgConnection, QueryResult, RunQueryDsl};
 
 #[derive(Associations, Debug, Identifiable, PartialEq, Queryable)]
 #[belongs_to(super::api_token::ApiToken)]
 #[table_name = "api_usage_records"]
-pub struct ApiToken {
-	pub id: String,
-	pub api_token_id: String,
+pub struct ApiUsageRecord {
+	pub id: i32,
+	pub api_token_id: i32,
 	pub method: String,
 	pub endpoint: String,
 	pub created_at: NaiveDateTime,
+}
+
+#[derive(Insertable)]
+#[table_name = "api_usage_records"]
+struct NewApiUsageRecord<'a> {
+	pub api_token_id: i32,
+	pub method: &'a str,
+	pub endpoint: &'a str,
+}
+
+/// Create one API usage record.
+pub fn create_api_usage_record<'a>(
+	conn: &PgConnection,
+	api_token_id: i32,
+	method: &'a str,
+	endpoint: &'a str,
+) -> QueryResult<ApiUsageRecord> {
+	let new_record = NewApiUsageRecord {
+		api_token_id,
+		method,
+		endpoint,
+	};
+
+	diesel::insert_into(api_usage_records::table)
+		.values(&new_record)
+		.get_result::<ApiUsageRecord>(conn)
 }
