@@ -14,11 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use super::schema::users;
+use super::schema::api_tokens;
 
-#[derive(Debug, Identifiable, PartialEq, Queryable)]
-#[table_name = "users"]
-pub struct User {
+#[derive(Associations, Debug, Identifiable, PartialEq, Queryable)]
+#[belongs_to(super::user::User)]
+#[table_name = "api_tokens"]
+pub struct ApiToken {
 	pub id: String,
-	pub stripe_customer: String,
+	pub api_token: String,
+	pub stripe_subscription_item: String,
+	pub user_id: String,
 }

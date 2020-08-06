@@ -14,11 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use super::schema::users;
+use super::schema::api_usage_records;
+use chrono::NaiveDateTime;
 
-#[derive(Debug, Identifiable, PartialEq, Queryable)]
-#[table_name = "users"]
-pub struct User {
+#[derive(Associations, Debug, Identifiable, PartialEq, Queryable)]
+#[belongs_to(super::api_token::ApiToken)]
+#[table_name = "api_usage_records"]
+pub struct ApiToken {
 	pub id: String,
-	pub stripe_customer: String,
+	pub api_token_id: String,
+	pub method: String,
+	pub endpoint: String,
+	pub created_at: NaiveDateTime,
 }
