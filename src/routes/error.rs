@@ -50,8 +50,7 @@ impl reject::Reject for ReacherResponseError {}
 
 /// This function receives a `Rejection` and tries to return a custom value,
 /// otherwise simply passes the rejection along.
-async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, Infallible> {
-	let response: &ReacherResponseError;
+pub async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, Infallible> {
 	if let Some(err) = err.find::<ReacherResponseError>() {
 		Ok(warp::reply::with_status(warp::reply::json(err), err.code))
 	} else {

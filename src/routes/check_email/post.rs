@@ -17,7 +17,7 @@
 //! This file implements the `POST /check_email` endpoint.
 
 use super::known_errors;
-use crate::{error::ReacherResponseError, sentry_util};
+use crate::{routes::error::ReacherResponseError, sentry_util};
 use async_recursion::async_recursion;
 use async_std::future;
 use check_if_email_exists::{check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput};

@@ -15,10 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod check_email;
+mod error;
 mod version;
 
+use std::convert::Infallible;
 use warp::Filter;
 
-pub fn create_routes() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-	version::get::get_version().or(check_email::post::post_check_email())
+pub fn create_routes() -> impl Filter<Extract = impl warp::Reply, Error = Infallible> + Clone {
+	version::get::get_version()
+		.or(check_email::post::post_check_email())
+		.recover(error::handle_rejection)
 }
