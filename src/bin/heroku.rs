@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use reacher_backend::{routes::create_routes, sentry_util::setup_sentry};
+use reacher_backend::{db::connect_db, routes::create_routes, sentry_util::setup_sentry};
 use std::{env, net::IpAddr};
 
 /// Run a HTTP server using warp.
@@ -31,7 +31,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 	let _guard = setup_sentry();
 
-	let routes = create_routes();
+	let database_url = env::var("RCH_DATABASE_URL").expect("RCH_DATABASE_URL must be set. qed.");
+	let pool = connect_db(&database_url);
+
+	let routes = create_routes(pool);
 
 	let host = env::var("RCH_HTTP_HOST")
 		.unwrap_or_else(|_| "127.0.0.1".into())

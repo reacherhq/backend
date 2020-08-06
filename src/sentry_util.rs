@@ -16,7 +16,7 @@
 
 //! Helper functions to send events to Sentry.
 
-use super::routes::check_email::post::RetryOption;
+use crate::routes::check_email::post::RetryOption;
 use sentry::protocol::{Event, Level};
 use std::{collections::BTreeMap, env};
 

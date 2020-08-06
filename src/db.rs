@@ -14,9 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use diesel::pg::PgConnection;
+use diesel::{
+	r2d2::{ConnectionManager, Pool},
+	PgConnection,
+};
 
-pub fn connect_db() -> PgConnection {
-	let database_url = env::var("RCH_DATABASE_URL").expect("RCH_DATABASE_URL must be set. qed.");
-	PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+pub type PgPool = Pool<ConnectionManager<PgConnection>>;
+
+/// Connect to the db, and create a connection pool.
+pub fn connect_db(database_url: &str) -> PgPool {
+	let manager = ConnectionManager::<PgConnection>::new(database_url);
+
+	Pool::builder()
+		.build(manager)
+		.expect(&format!("Failed to create pool with DB {}", database_url))
 }

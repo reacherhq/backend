@@ -17,6 +17,8 @@
 #[macro_use]
 extern crate diesel;
 
+pub mod db;
+mod errors;
 mod models;
 pub mod routes;
 pub mod sentry_util;
