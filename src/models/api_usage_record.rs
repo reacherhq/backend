@@ -54,3 +54,16 @@ pub fn create_api_usage_record<'a>(
 		.values(&new_record)
 		.get_result::<ApiUsageRecord>(conn)
 }
+
+/// Create an API usage record.
+pub fn get_api_usage_records_by_api_token<'a>(
+	conn: &PgConnection,
+	find_api_token_id: i32,
+) -> QueryResult<Vec<ApiUsageRecord>> {
+	use super::schema::api_usage_records::dsl::*;
+	use diesel::prelude::*;
+
+	api_usage_records
+		.filter(api_token_id.eq(find_api_token_id))
+		.load(conn)
+}

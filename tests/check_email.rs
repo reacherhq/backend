@@ -23,6 +23,7 @@ mod common;
 use common::{create_test_user, teardown_pool};
 use reacher_backend::{
 	db::{connect_db, PgPool},
+	models::api_usage_record::get_api_usage_records_by_api_token,
 	routes::{
 		check_email::post::{EndpointRequest, REACHER_API_TOKEN_HEADER},
 		create_routes,
@@ -167,6 +168,43 @@ async fn test_input_foo_bar_baz() {
 		resp.body(),
 		r#"{"input":"foo@bar.baz","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#
 	);
+
+	teardown_pool(pool, vec![&alice.id]);
+}
+
+#[tokio::test]
+async fn test_api_usage_record() {
+	let pool = setup_pool();
+	let (alice, alice_api_token) = create_test_user(&pool);
+	let connection = pool
+		.get()
+		.expect("DB pool is expected to be defined in tests. qed.");
+
+	// Send 2 requests.
+	let _ = request()
+		.path("/check_email")
+		.method("POST")
+		.header(
+			REACHER_API_TOKEN_HEADER,
+			alice_api_token.api_token.to_string(),
+		)
+		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
+		.reply(&create_routes(pool.clone()))
+		.await;
+	let _ = request()
+		.path("/check_email")
+		.method("POST")
+		.header(
+			REACHER_API_TOKEN_HEADER,
+			alice_api_token.api_token.to_string(),
+		)
+		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
+		.reply(&create_routes(pool.clone()))
+		.await;
+
+	let records = get_api_usage_records_by_api_token(&connection, alice_api_token.id)
+		.expect("Getting api usage records should work. qed.");
+	assert_eq!(records.len(), 2);
 
 	teardown_pool(pool, vec![&alice.id]);
 }
