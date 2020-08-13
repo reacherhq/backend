@@ -67,9 +67,9 @@ dependencies = [
 
 [[package]]
 name = "async-smtp"
-version = "0.3.2"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9720181a7d56bf3b4d0cfdcb6353df975125996bdd2958b4e639c8317fcaa68"
+checksum = "4a243eb83ec706b4bed429fc6917e8a103edb8c083720e5347a57a2766ffd41c"
 dependencies = [
  "async-native-tls",
  "async-std",
@@ -313,9 +313,9 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "check-if-email-exists"
-version = "0.8.11"
+version = "0.8.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d030cd89567f9d9c065c135e50fcdad0cb0295e2cff2110aef034902e3336116"
+checksum = "296f71819c393e88ee0db32906d77ef52048ca6ff045cb75ee6fcb81f397f536"
 dependencies = [
  "async-smtp",
  "async-std-resolver",
