@@ -14,5 +14,5 @@ jobs:
       - uses: akhileshns/heroku-deploy@v3.0.4
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: reacher-us-1
+          heroku_app_name: reacher-email-production-us
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
