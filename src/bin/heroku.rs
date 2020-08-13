@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	let pool = connect_db(&database_url);
 	let connection = pool
 		.get()
-		.expect(format!("Cannot connect to DB at {}.", database_url).as_str());
+		.unwrap_or_else(|_| panic!("Cannot connect to DB at {}.", database_url));
 
 	embedded_migrations::run(&connection)?;
 
