@@ -90,7 +90,11 @@ fn has_smtp_transient_errors(message: &[String]) -> bool {
 	// You dont seem to have a reverse dns entry. Come back later. You are greylisted for 20 minutes. See http://www.fsf.org/about/systems/greylisting
 	first_line.contains("reverse dns entry") ||
 	// 23.129.64.216 is not yet authorized to deliver mail from
-	first_line.contains("not yet authorized")
+	first_line.contains("not yet authorized") ||
+	// 4.3.2 Please try again later
+	first_line.contains("try again") ||
+	// Temporary local problem - please try later
+	first_line.contains("try later")
 }
 
 /// Checks if the output from `check-if-email-exists` has a known error, in
