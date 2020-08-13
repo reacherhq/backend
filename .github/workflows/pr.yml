@@ -58,7 +58,7 @@ jobs:
           command: test
           args: --all
         env:
-          RCH_DATABASE_URL: postgres://admin:admin@localhost/reacher
+          DATABASE_URL: postgres://admin:admin@localhost/reacher
 
   # Cargo fmt and clippy.
   lints:

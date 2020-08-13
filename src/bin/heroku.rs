@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	let _guard = setup_sentry();
 
 	let database_url =
-		env::var("RCH_DATABASE_URL").expect("Environment variable RCH_DATABASE_URL must be set.");
+		env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set.");
 	let pool = connect_db(&database_url);
 	let connection = pool
 		.get()

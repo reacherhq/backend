@@ -56,7 +56,7 @@ pub fn create_api_usage_record<'a>(
 }
 
 /// Create an API usage record.
-pub fn get_api_usage_records_by_api_token<'a>(
+pub fn get_api_usage_records_by_api_token(
 	conn: &PgConnection,
 	find_api_token_id: i32,
 ) -> QueryResult<Vec<ApiUsageRecord>> {

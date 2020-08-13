@@ -45,7 +45,7 @@ static INIT: Once = Once::new();
 /// go inside common.rs.
 pub fn setup_pool() -> PgPool {
 	let database_url =
-		env::var("RCH_DATABASE_URL").unwrap_or_else(|_| "postgres://localhost/reacher".into());
+		env::var("DATABASE_URL").unwrap_or_else(|_| "postgres://localhost/reacher".into());
 
 	let pool = connect_db(&database_url);
 	let connection = pool
