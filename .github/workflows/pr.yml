@@ -44,6 +44,12 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install pgsql
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql db: "reacher"
+          postgresql version: "latest"
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
