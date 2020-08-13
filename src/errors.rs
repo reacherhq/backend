@@ -42,6 +42,6 @@ pub async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, 
 	if let Some(err) = err.find::<ReacherResponseError>() {
 		Ok(warp::reply::with_status(warp::reply::json(err), err.code))
 	} else {
-		Err(err.into())
+		Err(err)
 	}
 }

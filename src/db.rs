@@ -27,5 +27,5 @@ pub fn connect_db(database_url: &str) -> PgPool {
 
 	Pool::builder()
 		.build(manager)
-		.expect(&format!("Failed to create pool with DB {}", database_url))
+		.unwrap_or_else(|_| panic!("Failed to create pool with DB {}", database_url))
 }

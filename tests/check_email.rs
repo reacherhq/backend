@@ -30,10 +30,15 @@ use reacher_backend::{
 };
 use serde_json;
 use std::env;
+use std::sync::Once;
 use warp::http::StatusCode;
 use warp::test::request;
 
 embed_migrations!();
+
+// Run some stuff once.
+// https://stackoverflow.com/questions/58006033/how-to-run-setup-code-before-any-tests-run-in-rust
+static INIT: Once = Once::new();
 
 /// Create a database pool after running all migrations. FIXME this file should
 /// go inside common.rs.
@@ -46,7 +51,9 @@ pub fn setup_pool() -> PgPool {
 		.get()
 		.expect("DB pool is expected to be defined in tests. qed.");
 
-	embedded_migrations::run(&connection).expect("Migrations should pass. qed.");
+	INIT.call_once(|| {
+		embedded_migrations::run(&connection).expect("Migrations should pass. qed.");
+	});
 
 	pool
 }

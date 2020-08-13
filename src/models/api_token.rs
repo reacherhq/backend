@@ -52,7 +52,7 @@ pub fn create_api_token<'a>(
 }
 
 /// Get an API token by its UUID.
-pub fn find_one_by_api_token<'a>(conn: &PgConnection, token: &Uuid) -> QueryResult<ApiToken> {
+pub fn find_one_by_api_token(conn: &PgConnection, token: &Uuid) -> QueryResult<ApiToken> {
 	use super::schema::api_tokens::dsl::*;
 	use diesel::prelude::*;
 

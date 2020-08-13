@@ -24,6 +24,6 @@ pub fn create_routes(
 	pool: PgPool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	version::get::get_version()
-		.or(check_email::post::post_check_email(pool.clone()))
+		.or(check_email::post::post_check_email(pool))
 		.recover(errors::handle_rejection)
 }

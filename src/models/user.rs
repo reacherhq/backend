@@ -52,7 +52,7 @@ pub fn get_user_by_stripe_customer<'a>(
 }
 
 /// Delete a User.
-pub fn delete_user<'a>(conn: &PgConnection, user_id: &Uuid) -> QueryResult<usize> {
+pub fn delete_user(conn: &PgConnection, user_id: &Uuid) -> QueryResult<usize> {
 	use super::schema::users::dsl::*;
 	use diesel::prelude::*;
 
