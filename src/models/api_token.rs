@@ -15,8 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use super::schema::api_tokens;
-use crate::diesel::ExpressionMethods;
-use diesel::{pg::PgConnection, prelude::*, QueryResult};
+use diesel::{pg::PgConnection, QueryResult, RunQueryDsl};
 use uuid::Uuid;
 
 #[derive(Associations, Debug, Identifiable, PartialEq, Queryable)]
@@ -29,9 +28,33 @@ pub struct ApiToken {
 	pub user_id: Uuid,
 }
 
-/// Get one API token by its UUID.
+#[derive(Insertable)]
+#[table_name = "api_tokens"]
+struct NewApiToken<'a> {
+	pub stripe_subscription_item: &'a str,
+	pub user_id: &'a Uuid,
+}
+
+/// Create an API token.
+pub fn create_api_token<'a>(
+	conn: &PgConnection,
+	stripe_subscription_item: &'a str,
+	user_id: &'a Uuid,
+) -> QueryResult<ApiToken> {
+	let new_api_token = NewApiToken {
+		stripe_subscription_item,
+		user_id,
+	};
+
+	diesel::insert_into(api_tokens::table)
+		.values(&new_api_token)
+		.get_result::<ApiToken>(conn)
+}
+
+/// Get an API token by its UUID.
 pub fn find_one_by_api_token<'a>(conn: &PgConnection, token: &Uuid) -> QueryResult<ApiToken> {
 	use super::schema::api_tokens::dsl::*;
+	use diesel::prelude::*;
 
 	api_tokens.filter(api_token.eq(token)).first(conn)
 }

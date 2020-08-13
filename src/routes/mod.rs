@@ -18,12 +18,11 @@ pub mod check_email;
 pub mod version;
 
 use super::{db::PgPool, errors};
-use std::convert::Infallible;
 use warp::Filter;
 
 pub fn create_routes(
 	pool: PgPool,
-) -> impl Filter<Extract = impl warp::Reply, Error = Infallible> + Clone {
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	version::get::get_version()
 		.or(check_email::post::post_check_email(pool.clone()))
 		.recover(errors::handle_rejection)

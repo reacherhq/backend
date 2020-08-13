@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    stripe_customer VARCHAR(255) NOT NULL
+    stripe_customer VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE api_tokens (

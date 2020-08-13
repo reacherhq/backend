@@ -19,6 +19,6 @@ extern crate diesel;
 
 pub mod db;
 mod errors;
-mod models;
+pub mod models;
 pub mod routes;
 pub mod sentry_util;

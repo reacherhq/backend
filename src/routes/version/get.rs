@@ -43,7 +43,7 @@ mod tests {
 	use warp::test::request;
 
 	#[tokio::test]
-	async fn test_input_foo_bar() {
+	async fn test_get_version() {
 		let resp = request()
 			.path("/version")
 			.method("GET")

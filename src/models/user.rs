@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use super::schema::users;
+use diesel::{pg::PgConnection, QueryResult, RunQueryDsl};
 use uuid::Uuid;
 
 #[derive(Debug, Identifiable, PartialEq, Queryable)]
@@ -22,4 +23,38 @@ use uuid::Uuid;
 pub struct User {
 	pub id: Uuid,
 	pub stripe_customer: String,
+}
+
+#[derive(Insertable)]
+#[table_name = "users"]
+struct NewUser<'a> {
+	pub stripe_customer: &'a str,
+}
+
+/// Create a User.
+pub fn create_user<'a>(conn: &PgConnection, stripe_customer: &'a str) -> QueryResult<User> {
+	let new_user = NewUser { stripe_customer };
+
+	diesel::insert_into(users::table)
+		.values(&new_user)
+		.get_result::<User>(conn)
+}
+
+/// Get a User by strip_customer.
+pub fn get_user_by_stripe_customer<'a>(
+	conn: &PgConnection,
+	customer: &'a str,
+) -> QueryResult<User> {
+	use super::schema::users::dsl::*;
+	use diesel::prelude::*;
+
+	users.filter(stripe_customer.eq(customer)).first(conn)
+}
+
+/// Delete a User.
+pub fn delete_user<'a>(conn: &PgConnection, user_id: &Uuid) -> QueryResult<usize> {
+	use super::schema::users::dsl::*;
+	use diesel::prelude::*;
+
+	diesel::delete(users.filter(id.eq(user_id))).execute(conn)
 }

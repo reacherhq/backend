@@ -14,8 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#[macro_use]
+extern crate diesel_migrations;
+
 use reacher_backend::{db::connect_db, routes::create_routes, sentry_util::setup_sentry};
 use std::{env, net::IpAddr};
+
+embed_migrations!();
 
 /// Run a HTTP server using warp.
 ///
@@ -31,17 +36,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 	let _guard = setup_sentry();
 
-	let database_url = env::var("RCH_DATABASE_URL").expect("RCH_DATABASE_URL must be set. qed.");
+	let database_url =
+		env::var("RCH_DATABASE_URL").expect("Environment variable RCH_DATABASE_URL must be set.");
 	let pool = connect_db(&database_url);
+	let connection = pool
+		.get()
+		.expect(format!("Cannot connect to DB at {}.", database_url).as_str());
+
+	embedded_migrations::run(&connection)?;
 
 	let routes = create_routes(pool);
 
 	let host = env::var("RCH_HTTP_HOST")
 		.unwrap_or_else(|_| "127.0.0.1".into())
 		.parse::<IpAddr>()
-		.expect("Env var RCH_HTTP_HOST is malformed.");
+		.expect("Environment variable RCH_HTTP_HOST is malformed.");
 	let port = env::var("PORT")
-		.map(|port| port.parse::<u16>().expect("Env var PORT is malformed."))
+		.map(|port| {
+			port.parse::<u16>()
+				.expect("Environment variable PORT is malformed.")
+		})
 		.unwrap_or(8080);
 	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
 

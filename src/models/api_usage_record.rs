@@ -37,7 +37,7 @@ struct NewApiUsageRecord<'a> {
 	pub endpoint: &'a str,
 }
 
-/// Create one API usage record.
+/// Create an API usage record.
 pub fn create_api_usage_record<'a>(
 	conn: &PgConnection,
 	api_token_id: i32,

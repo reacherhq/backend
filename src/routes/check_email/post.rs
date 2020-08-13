@@ -36,11 +36,11 @@ use warp::{http, reject, Filter};
 const TIMEOUT_THRESHOLD: u64 = 15;
 
 /// The header which holds the Reacher API toke.
-const REACHER_API_TOKEN_HEADER: &str = "x-reacher-api-token";
+pub const REACHER_API_TOKEN_HEADER: &str = "x-reacher-api-token";
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct EndpointRequest {
+pub struct EndpointRequest {
 	from_email: Option<String>,
 	hello_name: Option<String>,
 	to_email: String,
@@ -177,14 +177,14 @@ async fn check_email(
 	let uuid = Uuid::from_str(api_token.as_str()).map_err(|err| {
 		reject::custom(ReacherResponseError::new(
 			http::StatusCode::BAD_REQUEST,
-			err.to_string(),
+			format!("Invalid UUID: {}", err),
 		))
 	})?;
 	// Fetch the corresponding ApiToken object from the db.
 	let api_token = models::api_token::find_one_by_api_token(&conn, &uuid).map_err(|err| {
 		reject::custom(ReacherResponseError::new(
-			http::StatusCode::INTERNAL_SERVER_ERROR,
-			err.to_string(),
+			http::StatusCode::UNAUTHORIZED,
+			format!("Cannot find api_token: {}", err),
 		))
 	})?;
 
@@ -251,46 +251,4 @@ pub fn post_check_email(
 		.and_then(check_email)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
-}
-
-#[cfg(test)]
-mod tests {
-	use super::{post_check_email, EndpointRequest};
-	use serde_json;
-	use warp::http::StatusCode;
-	use warp::test::request;
-
-	#[tokio::test]
-	async fn test_input_foo_bar() {
-		let resp = request()
-			.path("/check_email")
-			.method("POST")
-			.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar"}"#).unwrap())
-			.reply(&post_check_email())
-			.await;
-
-		assert_eq!(resp.status(), StatusCode::OK);
-		assert_eq!(
-			resp.body(),
-			r#"{"input":"foo@bar","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":null,"domain":"","is_valid_syntax":false,"username":""}}"#
-		);
-	}
-
-	#[tokio::test]
-	async fn test_input_foo_bar_baz() {
-		let resp = request()
-			.path("/check_email")
-			.method("POST")
-			.json(
-				&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap(),
-			)
-			.reply(&post_check_email())
-			.await;
-
-		assert_eq!(resp.status(), StatusCode::OK);
-		assert_eq!(
-			resp.body(),
-			r#"{"input":"foo@bar.baz","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#
-		);
-	}
 }
