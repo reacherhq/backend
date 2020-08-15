@@ -102,12 +102,12 @@ fn create_check_email_input(
 
 /// Errors that can happen during an email verification.
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 enum CheckEmailError {
 	/// Request times out.
 	Timeout(future::TimeoutError),
 	/// We get an `is_reachable` Unknown. We consider this internally as an
 	/// error case, so that we can do retry mechanisms (see select_ok & retry).
-	#[allow(clippy::large_enum_variant)]
 	Unknown((CheckEmailOutput, RetryOption)),
 }
 
