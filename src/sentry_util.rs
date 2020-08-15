@@ -17,7 +17,7 @@
 //! Helper functions to send events to Sentry.
 
 use crate::routes::check_email::post::RetryOption;
-use sentry::protocol::{Event, Level};
+use sentry::protocol::{Event, Level, Value};
 use std::{collections::BTreeMap, env};
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -36,14 +36,25 @@ pub fn setup_sentry() -> sentry::ClientInitGuard {
 	sentry
 }
 
+/// If HEROKU_APP_NAME environment variable is set, add it to the sentry extra
+/// properties.
+fn add_heroku_app_name(mut extra: BTreeMap<String, Value>) -> BTreeMap<String, Value> {
+	if let Ok(heroku_app_name) = env::var("HEROKU_APP_NAME") {
+		extra.insert("HEROKU_APP_NAME".into(), heroku_app_name.into());
+	}
+
+	extra
+}
+
 /// Helper function to send an Info event to Sentry.
-pub fn info(message: String, option: RetryOption, duration: u128) {
+pub fn info(message: String, retry_option: RetryOption, duration: u128) {
 	log::info!("Sending to Sentry: {}", message);
 
 	let mut extra = BTreeMap::new();
 
 	extra.insert("duration".into(), duration.to_string().into());
-	extra.insert("proxy_option".into(), option.to_string().into());
+	extra.insert("retry_option".into(), retry_option.to_string().into());
+	extra = add_heroku_app_name(extra);
 
 	sentry::capture_event(Event {
 		extra,
@@ -67,6 +78,7 @@ pub fn error(message: String, result: Option<&str>, retry_option: Option<RetryOp
 	if let Some(retry_option) = retry_option {
 		extra.insert("proxy_option".into(), retry_option.to_string().into());
 	}
+	extra = add_heroku_app_name(extra);
 
 	sentry::capture_event(Event {
 		extra,
