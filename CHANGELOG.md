@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/reacherhq/backend/compare/v0.2.5...v0.3.0) (2020-08-15)
+
+
+### Features
+
+* Add basic authentication with Heroku ([#114](https://github.com/reacherhq/backend/issues/114)) ([ed95737](https://github.com/reacherhq/backend/commit/ed957371ced2b4752fb53b6ef38017587e9299aa))
+
 ### [0.2.5](https://github.com/reacherhq/backend/compare/v0.2.4...v0.2.5) (2020-07-11)
 
 
