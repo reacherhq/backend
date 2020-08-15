@@ -6,25 +6,13 @@ on:
       - v*.*.*
 
 jobs:
-  # Deploy the code to Serverless.
-  serverless-production:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-      - run: yarn install
-      - name: serverless deploy
-        run: yarn serverless deploy --stage production
-        env:
-          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
-
   # Deploy the code to Heroku.
-  heroku:
+  heroku-production:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.0.4
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: reacher-us-1
+          heroku_app_name: reacher-email-production-us
           heroku_email: ${{ secrets.HEROKU_EMAIL }}

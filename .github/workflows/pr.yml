@@ -44,11 +44,21 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install pgsql
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql db: reacher
+          postgresql user: admin
+          postgresql password: admin
+          postgresql version: latest
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all
+        env:
+          DATABASE_URL: postgres://admin:admin@localhost/reacher
 
   # Cargo fmt and clippy.
   lints:

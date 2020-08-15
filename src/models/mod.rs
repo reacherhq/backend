@@ -14,11 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[macro_use]
-extern crate diesel;
-
-pub mod db;
-mod errors;
-pub mod models;
-pub mod routes;
-pub mod sentry_util;
+pub mod api_token;
+pub mod api_usage_record;
+mod schema;
+pub mod user;

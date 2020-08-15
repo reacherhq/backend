@@ -1,15 +1,11 @@
 {
 	"name": "reacher",
 	"buildpacks": [{ "url": "emk/rust" }],
-	"description": "Free Email Verification API",
+	"description": "Real-Time Email Verification API",
 	"env": {
 		"RCH_HTTP_HOST": {
 			"description": "The host name to bind the HTTP server to.",
 			"value": "0.0.0.0"
-		},
-		"RCH_PROVIDER": {
-			"description": "The platform on which Reacher is deployed to.",
-			"value": "heroku"
 		}
 	},
 	"keywords": ["email", "smtp", "rust", "email-validation", "email-verification"],

@@ -14,11 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[macro_use]
-extern crate diesel;
+use diesel::{
+	r2d2::{ConnectionManager, Pool},
+	PgConnection,
+};
 
-pub mod db;
-mod errors;
-pub mod models;
-pub mod routes;
-pub mod sentry_util;
+pub type PgPool = Pool<ConnectionManager<PgConnection>>;
+
+/// Connect to the db, and create a connection pool.
+pub fn connect_db(database_url: &str) -> PgPool {
+	let manager = ConnectionManager::<PgConnection>::new(database_url);
+
+	Pool::builder()
+		.build(manager)
+		.unwrap_or_else(|_| panic!("Failed to create pool with DB {}", database_url))
+}

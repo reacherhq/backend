@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use lambda_http::{handler, lambda};
-use reacher_backend::serverless::lambda::lambda_check_email_handler;
+pub mod check_email;
+pub mod version;
 
-type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+use super::{db::PgPool, errors};
+use warp::Filter;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-	env_logger::init();
-	lambda::run(handler(lambda_check_email_handler)).await?;
-	Ok(())
+pub fn create_routes(
+	pool: PgPool,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	version::get::get_version()
+		.or(check_email::post::post_check_email(pool))
+		.recover(errors::handle_rejection)
 }

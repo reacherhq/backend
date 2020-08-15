@@ -6,14 +6,13 @@ on:
       - master
 
 jobs:
-  # Deploy to serverless, using the `dev` stage.
-  serverless-staging:
+  # Deploy the code to Heroku.
+  heroku-staging:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-      - run: yarn install
-      - name: serverless deploy
-        run: yarn serverless deploy
-        env:
-          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.0.4
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: reacher-email-staging
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
