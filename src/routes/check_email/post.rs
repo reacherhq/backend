@@ -107,6 +107,7 @@ enum CheckEmailError {
 	Timeout(future::TimeoutError),
 	/// We get an `is_reachable` Unknown. We consider this internally as an
 	/// error case, so that we can do retry mechanisms (see select_ok & retry).
+	#[allow(clippy::large_enum_variant)]
 	Unknown((CheckEmailOutput, RetryOption)),
 }
 
