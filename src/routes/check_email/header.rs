@@ -48,7 +48,6 @@ fn check_api_token(
 	pool: PgPool,
 	api_token: String,
 ) -> Result<models::api_token::ApiToken, warp::Rejection> {
-	let pool = pool.clone();
 	// Get connection from pool.
 	let conn = pool.get().map_err(pg_to_warp_error)?;
 	// Make sure the api_token in header is a correct UUID.
