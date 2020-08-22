@@ -16,7 +16,11 @@
 
 //! This file implements the `POST /check_email` endpoint.
 
-use super::known_errors;
+use super::{
+	header::{check_header, HeaderSecret},
+	known_errors,
+	util::pg_to_warp_error,
+};
 use crate::{db::PgPool, errors::ReacherResponseError, models, sentry_util};
 use async_recursion::async_recursion;
 use async_std::future;
@@ -28,17 +32,12 @@ use serde::{Deserialize, Serialize};
 use std::{
 	convert::Infallible,
 	env, fmt,
-	str::FromStr,
 	time::{Duration, Instant},
 };
-use uuid::Uuid;
 use warp::{http, reject, Filter};
 
 /// Timeout after which we drop the `check-if-email-exists` check.
 const TIMEOUT_THRESHOLD: u64 = 15;
-
-/// The header which holds the Reacher API toke.
-pub const REACHER_API_TOKEN_HEADER: &str = "x-reacher-api-token";
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -209,32 +208,10 @@ async fn retry(
 
 /// The main `check_email` function that implements the logic of this route.
 async fn check_email(
-	api_token: String,
 	pool: PgPool,
+	header_secret: HeaderSecret,
 	body: EndpointRequest,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-	// Get connection from pool.
-	let conn = pool.get().map_err(|err| {
-		reject::custom(ReacherResponseError::new(
-			http::StatusCode::INTERNAL_SERVER_ERROR,
-			err.to_string(),
-		))
-	})?;
-	// Make sure the api_token in header is a correct UUID.
-	let uuid = Uuid::from_str(api_token.as_str()).map_err(|err| {
-		reject::custom(ReacherResponseError::new(
-			http::StatusCode::BAD_REQUEST,
-			format!("Invalid UUID: {}", err),
-		))
-	})?;
-	// Fetch the corresponding ApiToken object from the db.
-	let api_token = models::api_token::find_one_by_api_token(&conn, &uuid).map_err(|err| {
-		reject::custom(ReacherResponseError::new(
-			http::StatusCode::UNAUTHORIZED,
-			format!("Cannot find api_token: {}", err),
-		))
-	})?;
-
 	// Run `ciee_check_email` with retries if necessary. Also measure the
 	// verification time.
 	let now = Instant::now();
@@ -251,19 +228,25 @@ async fn check_email(
 				now.elapsed().as_millis(),
 			);
 
-			// Add a usage record in the db.
-			models::api_usage_record::create_api_usage_record(
-				&conn,
-				api_token.id,
-				"POST",
-				"/check_email",
-			)
-			.map_err(|err| {
-				reject::custom(ReacherResponseError::new(
-					http::StatusCode::INTERNAL_SERVER_ERROR,
-					err.to_string(),
-				))
-			})?;
+			// Add a usage record in the db, if the Reacher api token is
+			// present.
+			if let HeaderSecret::Reacher(api_token) = header_secret {
+				// Get connection from pool.
+				let conn = pool.get().map_err(pg_to_warp_error)?;
+
+				models::api_usage_record::create_api_usage_record(
+					&conn,
+					api_token.id,
+					"POST",
+					"/check_email",
+				)
+				.map_err(|err| {
+					reject::custom(ReacherResponseError::new(
+						http::StatusCode::INTERNAL_SERVER_ERROR,
+						err.to_string(),
+					))
+				})?;
+			}
 
 			Ok(warp::reply::json(&value))
 		}
@@ -289,8 +272,8 @@ pub fn post_check_email(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "check_email")
 		.and(warp::post())
-		.and(warp::header(REACHER_API_TOKEN_HEADER))
-		.and(with_db_pool(pool))
+		.and(with_db_pool(pool.clone()))
+		.and(check_header(pool))
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		.and(warp::body::content_length_limit(1024 * 16))
