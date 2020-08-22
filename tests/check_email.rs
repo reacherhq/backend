@@ -64,7 +64,7 @@ async fn test_missing_api_token() {
 	let pool = setup_pool();
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 		.reply(&create_routes(pool))
@@ -83,7 +83,7 @@ async fn test_api_token_not_uuid() {
 	let pool = setup_pool();
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(REACHER_API_TOKEN_HEADER, "foo")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
@@ -103,7 +103,7 @@ async fn test_api_token_not_in_db() {
 	let (alice, _) = create_test_user(&pool);
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -128,7 +128,7 @@ async fn test_input_foo_bar() {
 	let (alice, alice_api_token) = create_test_user(&pool);
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -153,7 +153,7 @@ async fn test_input_foo_bar_baz() {
 	let (alice, alice_api_token) = create_test_user(&pool);
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -182,7 +182,7 @@ async fn test_api_usage_record() {
 
 	// Send 2 requests.
 	let _ = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -192,7 +192,7 @@ async fn test_api_usage_record() {
 		.reply(&create_routes(pool.clone()))
 		.await;
 	let _ = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,

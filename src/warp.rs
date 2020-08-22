@@ -53,7 +53,7 @@ async fn warp_check_email(_: (), body: ReacherInput) -> Result<impl warp::Reply,
 /// Create all the endpoints of our API.
 pub fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	// POST /check_email
-	let post_check_email = warp::path("check_email")
+	let post_check_email = warp::path!("v0" / "check_email")
 		.and(warp::post())
 		// FIXME We should be able to just use warp::header::exact, and remove
 		// completely `./saasify_secret.rs`.
@@ -75,4 +75,3 @@ pub fn create_api() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rej
 
 	get_version.or(post_check_email)
 }
-
