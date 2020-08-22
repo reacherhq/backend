@@ -14,7 +14,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod header;
-mod known_errors;
-pub mod post;
-mod util;
+use crate::errors::ReacherResponseError;
+use std::fmt;
+use warp::{http, reject, Rejection};
+
+/// Convert a psql error to a warp rejection.
+pub fn pg_to_warp_error<T>(err: T) -> Rejection
+where
+	T: fmt::Display,
+{
+	reject::custom(ReacherResponseError::new(
+		http::StatusCode::INTERNAL_SERVER_ERROR,
+		err.to_string(),
+	))
+}
