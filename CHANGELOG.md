@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.1](https://github.com/reacherhq/backend/compare/v0.3.0...v0.3.1) (2020-08-23)
+
+
+### Features
+
+* Add saasify support ([#125](https://github.com/reacherhq/backend/issues/125)) ([2407a02](https://github.com/reacherhq/backend/commit/2407a02134479f88dcb93b8054ad538a73b8103d))
+* Add v0 prefix to routes ([#126](https://github.com/reacherhq/backend/issues/126)) ([671a7a0](https://github.com/reacherhq/backend/commit/671a7a0899b16013ca5e727fd70ab22d2c429f2b))
+
 ## [0.3.0](https://github.com/reacherhq/backend/compare/v0.2.5...v0.3.0) (2020-08-15)
 
 
