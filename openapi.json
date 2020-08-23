@@ -16,8 +16,8 @@
   },
   "servers": [
     {
-      "url": "https://3wn2qx3bx5.execute-api.us-east-1.amazonaws.com/production/v0",
-      "description": "Hosted by AWS Lambda"
+      "url": "https://api.reacher.email/v0",
+      "description": "Reacher backend."
     }
   ],
   "paths": {

@@ -67,7 +67,7 @@ async fn test_missing_header() {
 	let pool = setup_pool();
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 		.reply(&create_routes(pool))
@@ -86,7 +86,7 @@ async fn test_wrong_saasify_secret() {
 	let pool = setup_pool();
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(SAASIFY_SECRET_HEADER, "foo")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
@@ -106,7 +106,7 @@ async fn test_api_token_not_uuid() {
 	let pool = setup_pool();
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(REACHER_API_TOKEN_HEADER, "foo")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
@@ -126,7 +126,7 @@ async fn test_api_token_not_in_db() {
 	let (alice, _) = create_test_user(&pool);
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -151,7 +151,7 @@ async fn test_input_foo_bar() {
 	let (alice, alice_api_token) = create_test_user(&pool);
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -176,7 +176,7 @@ async fn test_input_foo_bar_baz() {
 	let (alice, alice_api_token) = create_test_user(&pool);
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -199,7 +199,7 @@ async fn test_input_foo_bar_baz_with_saasify_secret() {
 	let pool = setup_pool();
 
 	let resp = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(SAASIFY_SECRET_HEADER, DEFAULT_SAASIFY_SECRET)
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
@@ -223,7 +223,7 @@ async fn test_api_usage_record() {
 
 	// Send 2 requests.
 	let _ = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -233,7 +233,7 @@ async fn test_api_usage_record() {
 		.reply(&create_routes(pool.clone()))
 		.await;
 	let _ = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		.header(
 			REACHER_API_TOKEN_HEADER,
@@ -260,7 +260,7 @@ async fn test_no_api_usage_record_with_saasify() {
 
 	// Send 2 requests.
 	let _ = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		// We put both headers. Only the Saasify one should be taken into
 		// account.
@@ -273,7 +273,7 @@ async fn test_no_api_usage_record_with_saasify() {
 		.reply(&create_routes(pool.clone()))
 		.await;
 	let _ = request()
-		.path("/check_email")
+		.path("/v0/check_email")
 		.method("POST")
 		// We only put the Saasify header here.
 		.header(SAASIFY_SECRET_HEADER, DEFAULT_SAASIFY_SECRET)

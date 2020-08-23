@@ -270,7 +270,7 @@ fn with_db_pool(pool: PgPool) -> impl Filter<Extract = (PgPool,), Error = Infall
 pub fn post_check_email(
 	pool: PgPool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-	warp::path("check_email")
+	warp::path!("v0" / "check_email")
 		.and(warp::post())
 		.and(with_db_pool(pool.clone()))
 		.and(check_header(pool))
