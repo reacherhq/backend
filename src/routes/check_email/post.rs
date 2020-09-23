@@ -19,7 +19,7 @@
 use super::{
 	header::{check_header, HeaderSecret},
 	known_errors,
-	util::pg_to_warp_error,
+	util::{pg_to_warp_error, race_future2},
 };
 use crate::{db::PgPool, errors::ReacherResponseError, models, sentry_util};
 use async_recursion::async_recursion;
@@ -27,7 +27,6 @@ use async_std::future;
 use check_if_email_exists::{
 	check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput, Reachable,
 };
-use futures::future::select_ok;
 use serde::{Deserialize, Serialize};
 use std::{
 	convert::Infallible,
@@ -36,8 +35,9 @@ use std::{
 };
 use warp::{http, reject, Filter};
 
-/// Timeout after which we drop the `check-if-email-exists` check.
-const TIMEOUT_THRESHOLD: u64 = 15;
+/// Timeout after which we drop the `check-if-email-exists` check. We run the
+/// checks twice (to avoid greylisting), so each verification takes 20s max.
+const TIMEOUT_THRESHOLD: u64 = 10;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -63,12 +63,12 @@ impl fmt::Display for RetryOption {
 	}
 }
 
-/// Converts an endpoint request body into a CheckEmailInput to be passed into
-/// check_if_email_exists.
-fn create_check_email_input(
+/// Converts an endpoint request body into a future that performs email
+/// verification.
+async fn create_check_email_future(
 	body: &EndpointRequest,
 	use_tor: bool,
-) -> (CheckEmailInput, RetryOption) {
+) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
 	// FIXME Can we not clone?
 	let body = body.clone();
 
@@ -96,7 +96,9 @@ fn create_check_email_input(
 	} else {
 		RetryOption::Direct
 	};
-	(input, retry_option)
+
+	// Retry each future twice, to avoid grey-listing.
+	retry(&input, retry_option, 2).await
 }
 
 /// Errors that can happen during an email verification.
@@ -116,25 +118,23 @@ impl From<future::TimeoutError> for CheckEmailError {
 	}
 }
 
-/// Run `ciee_check_email` function with a `TIMEOUT_THRESHOLD`-second timeout.
+/// Run `ciee_check_email` function with a timeout of `TIMEOUT_THRESHOLD`
+/// seconds.
 async fn check_email_with_timeout(
-	input: CheckEmailInput,
+	input: &CheckEmailInput,
 	retry_option: RetryOption,
 ) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
-	log::debug!(
-		target:"reacher",
-		"[email={}] Checking with retry option {}",
-		input.to_emails[0],
-		retry_option,
-	);
-
 	future::timeout(
 		Duration::from_secs(TIMEOUT_THRESHOLD),
 		ciee_check_email(&input),
 	)
 	.await
-	.map_err(|err| err.into())
+	.map_err(|err| {
+		println!("check_email_with_timeout error");
+		err.into()
+	})
 	.and_then(|mut results| {
+		println!("check_email_with_timeout ok");
 		let result = results.pop().expect("The input has one email. qed.");
 
 		log::debug!(
@@ -159,38 +159,25 @@ async fn check_email_with_timeout(
 /// greylisting.
 #[async_recursion]
 async fn retry(
-	body: &EndpointRequest,
+	input: &CheckEmailInput,
+	retry_option: RetryOption,
 	count: usize,
 ) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
 	log::debug!(
 		target:"reacher",
-		"[email={}] Checking, attempt #{}",
-		body.to_email,
+		"[email={}] Checking with retry option {}, attempt #{}",
+		input.to_emails[0],
+		retry_option,
 		count,
 	);
 
-	// Create 2 futures:
-	// - one connecting directly to the SMTP server,
-	// - the other one connecting to it via Tor.
-	// Then race these 2 futures.
-	let futures = vec![
-		create_check_email_input(body, true),
-		create_check_email_input(body, false),
-	]
-	.into_iter()
-	.map(|(input, retry_option)| {
-		let fut = check_email_with_timeout(input, retry_option);
-		// https://rust-lang.github.io/async-book/04_pinning/01_chapter.html
-		Box::pin(fut)
-	});
-
-	match select_ok(futures).await {
-		Ok(((result, retry_option), _)) => {
+	match check_email_with_timeout(input, retry_option).await {
+		Ok((result, retry_option)) => {
 			if known_errors::has_known_errors(&result, retry_option) {
 				if count <= 1 {
 					Ok((result, retry_option))
 				} else {
-					retry(body, count - 1).await
+					retry(input, retry_option, count - 1).await
 				}
 			} else {
 				Ok((result, retry_option))
@@ -200,7 +187,7 @@ async fn retry(
 			if count <= 1 {
 				Err(err)
 			} else {
-				retry(body, count - 1).await
+				retry(input, retry_option, count - 1).await
 			}
 		}
 	}
@@ -215,11 +202,23 @@ async fn check_email(
 	// Run `ciee_check_email` with retries if necessary. Also measure the
 	// verification time.
 	let now = Instant::now();
-	// We retry checking the email twice, to avoid greylisting.
-	let result = retry(&body, 2).await;
+
+	// Create 2 futures:
+	// - one connecting directly to the SMTP server,
+	// - the other one connecting to it via Tor.
+	// Then race these 2 futures.
+	let result = race_future2(
+		create_check_email_future(&body, false),
+		create_check_email_future(&body, true),
+	)
+	.await;
 
 	match result {
-		Ok((value, retry_option)) | Err(CheckEmailError::Unknown((value, retry_option))) => {
+		// Show a 200 response if we have either a successful email check, or
+		// if we had an is_reachable Unknown.
+		Ok((value, retry_option))
+		| Err((CheckEmailError::Unknown((value, retry_option)), _))
+		| Err((_, CheckEmailError::Unknown((value, retry_option)))) => {
 			// Log on Sentry the `is_reachable` field.
 			// FIXME We should definitely log this somehwere else than Sentry.
 			sentry_util::info(
@@ -250,7 +249,8 @@ async fn check_email(
 
 			Ok(warp::reply::json(&value))
 		}
-		Err(err) => {
+		Err((err, _)) => {
+			// `err` will be a TimeoutError here.
 			sentry_util::error(format!("POST /check_email error: {:?}", err), None, None);
 
 			Err(reject::custom(ReacherResponseError::new(
