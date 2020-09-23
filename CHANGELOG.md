@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.2](https://github.com/reacherhq/backend/compare/v0.3.1...v0.3.2) (2020-09-23)
+
+
+### Bug Fixes
+
+* Add a better race future function ([#133](https://github.com/reacherhq/backend/issues/133)) ([a569b55](https://github.com/reacherhq/backend/commit/a569b55f81da78dfef4a26ee82b203d663765781))
+
 ### [0.3.1](https://github.com/reacherhq/backend/compare/v0.3.0...v0.3.1) (2020-08-23)
 
 
