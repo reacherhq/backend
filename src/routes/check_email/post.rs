@@ -129,12 +129,8 @@ async fn check_email_with_timeout(
 		ciee_check_email(&input),
 	)
 	.await
-	.map_err(|err| {
-		println!("check_email_with_timeout error");
-		err.into()
-	})
+	.map_err(|err| err.into())
 	.and_then(|mut results| {
-		println!("check_email_with_timeout ok");
 		let result = results.pop().expect("The input has one email. qed.");
 
 		log::debug!(
