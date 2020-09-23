@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// FIXME What value should I put here?
+#![type_length_limit = "99999999999999"]
+
 #[macro_use]
 extern crate diesel;
 
