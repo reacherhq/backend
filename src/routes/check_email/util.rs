@@ -47,8 +47,6 @@ where
 	let rev_fut1 = fut1.map(reverse_result);
 	let rev_fut2 = fut2.map(reverse_result);
 
-	// FIXME Why do the following line not work?
-	// try_join!(rev_fut1, rev_fut1).map(reverse_result)
 	match try_join!(rev_fut1, rev_fut2) {
 		Ok((err1, err2)) => Err((err1, err2)),
 		Err(res) => Ok(res),

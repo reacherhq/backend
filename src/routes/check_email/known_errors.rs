@@ -99,7 +99,7 @@ fn has_smtp_transient_errors(message: &[String]) -> bool {
 
 /// Checks if the output from `check-if-email-exists` has a known error, in
 /// which case we don't log to Sentry to avoid spamming it.
-pub fn has_known_errors(result: &CheckEmailOutput, retry_option: RetryOption) -> bool {
+pub fn log_unknown_errors(result: &CheckEmailOutput, retry_option: RetryOption) {
 	match (&result.misc, &result.mx, &result.smtp) {
 		(Err(error), _, _) => {
 			// We log misc errors.
@@ -108,8 +108,6 @@ pub fn has_known_errors(result: &CheckEmailOutput, retry_option: RetryOption) ->
 				Some(format!("{:#?}", result).as_ref()),
 				Some(retry_option),
 			);
-
-			true
 		}
 		(_, Err(error), _) => {
 			// We log mx errors.
@@ -118,27 +116,21 @@ pub fn has_known_errors(result: &CheckEmailOutput, retry_option: RetryOption) ->
 				Some(format!("{:#?}", result).as_ref()),
 				Some(retry_option),
 			);
-
-			true
 		}
 		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
 			if has_smtp_permanent_errors(&response.message) =>
 		{
-			log::debug!(target: "reacher", "{}", response.message[0]);
-
-			true
+			log::debug!(target: "reacher", "Permanent error: {}", response.message[0]);
 		}
 		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 			if has_smtp_transient_errors(&response.message) =>
 		{
-			log::debug!(target: "reacher", "{}", response.message[0]);
-			true
+			log::debug!(target: "reacher", "Transient error: {}", response.message[0]);
 		}
 		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Io(error))))
 			if has_smtp_io_errors(error) =>
 		{
-			log::debug!(target: "reacher", "{}", error);
-			true
+			log::debug!(target: "reacher", "Io error: {}", error);
 		}
 		(_, _, Err(error)) => {
 			// If it's a SMTP error we didn't catch above, we log to
@@ -150,10 +142,8 @@ pub fn has_known_errors(result: &CheckEmailOutput, retry_option: RetryOption) ->
 				Some(format!("{:#?}", result).as_ref()),
 				Some(retry_option),
 			);
-
-			true
 		}
 		// If everything is ok, we just return the result.
-		(Ok(_), Ok(_), Ok(_)) => false,
+		(Ok(_), Ok(_), Ok(_)) => {}
 	}
 }

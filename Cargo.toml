@@ -8,7 +8,6 @@ publish = false
 [dependencies]
 async-recursion = "0.3"
 async-smtp = "0.3"
-async-std = "1.6"
 check-if-email-exists = "0.8"
 chrono = "0.4"
 diesel = { version = "1.4", features = ["chrono", "postgres", "r2d2", "uuidv07"] }

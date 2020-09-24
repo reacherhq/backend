@@ -48,7 +48,7 @@ fn add_heroku_app_name(mut extra: BTreeMap<String, Value>) -> BTreeMap<String, V
 
 /// Helper function to send an Info event to Sentry.
 pub fn info(message: String, retry_option: RetryOption, duration: u128) {
-	log::info!("Sending to Sentry: {}", message);
+	log::info!("Sending info to Sentry: {}", message);
 
 	let mut extra = BTreeMap::new();
 
@@ -69,7 +69,7 @@ pub fn info(message: String, retry_option: RetryOption, duration: u128) {
 
 /// Helper function to send an Error event to Sentry.
 pub fn error(message: String, result: Option<&str>, retry_option: Option<RetryOption>) {
-	log::debug!("Sending to Sentry: {}", message);
+	log::debug!("Sending error to Sentry: {}", message);
 	let mut extra = BTreeMap::new();
 
 	if let Some(result) = result {
