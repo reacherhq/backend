@@ -23,7 +23,6 @@ use super::{
 };
 use crate::{db::PgPool, errors::ReacherResponseError, models, sentry_util};
 use async_recursion::async_recursion;
-use async_std::future;
 use check_if_email_exists::{
 	check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput, Reachable,
 };
@@ -37,7 +36,7 @@ use warp::{http, reject, Filter};
 
 /// Timeout after which we drop the `check-if-email-exists` check. We run the
 /// checks twice (to avoid greylisting), so each verification takes 20s max.
-const TIMEOUT_THRESHOLD: u64 = 10;
+const SMTP_THRESHOLD: u64 = 10;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -61,6 +60,14 @@ impl fmt::Display for RetryOption {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{:?}", self)
 	}
+}
+
+/// Errors that can happen during an email verification.
+#[derive(Debug)]
+enum CheckEmailError {
+	/// We get an `is_reachable` Unknown. We consider this internally as an
+	/// error case, so that we can do retry mechanisms (see select_ok & retry).
+	Unknown((CheckEmailOutput, RetryOption)),
 }
 
 /// Converts an endpoint request body into a future that performs email
@@ -97,58 +104,10 @@ async fn create_check_email_future(
 		RetryOption::Direct
 	};
 
+	input.smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
+
 	// Retry each future twice, to avoid grey-listing.
 	retry(&input, retry_option, 2).await
-}
-
-/// Errors that can happen during an email verification.
-#[derive(Debug)]
-#[allow(clippy::large_enum_variant)]
-enum CheckEmailError {
-	/// Request times out.
-	Timeout(future::TimeoutError),
-	/// We get an `is_reachable` Unknown. We consider this internally as an
-	/// error case, so that we can do retry mechanisms (see select_ok & retry).
-	Unknown((CheckEmailOutput, RetryOption)),
-}
-
-impl From<future::TimeoutError> for CheckEmailError {
-	fn from(err: future::TimeoutError) -> Self {
-		CheckEmailError::Timeout(err)
-	}
-}
-
-/// Run `ciee_check_email` function with a timeout of `TIMEOUT_THRESHOLD`
-/// seconds.
-async fn check_email_with_timeout(
-	input: &CheckEmailInput,
-	retry_option: RetryOption,
-) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
-	future::timeout(
-		Duration::from_secs(TIMEOUT_THRESHOLD),
-		ciee_check_email(&input),
-	)
-	.await
-	.map_err(|err| err.into())
-	.and_then(|mut results| {
-		let result = results.pop().expect("The input has one email. qed.");
-
-		log::debug!(
-			target:"reacher",
-			"[email={}] Got result with retry option {}: is_reachable={:?}",
-			input.to_emails[0],
-			retry_option,
-			result.is_reachable
-		);
-
-		// If it's an is_reachable Unknown, we return an error, so that the
-		// select_ok and retry functions will continue retrying.
-		if result.is_reachable == Reachable::Unknown {
-			Err(CheckEmailError::Unknown((result, retry_option)))
-		} else {
-			Ok((result, retry_option))
-		}
-	})
 }
 
 /// Retry the check ciee_check_email function, in particular to avoid
@@ -167,25 +126,31 @@ async fn retry(
 		count,
 	);
 
-	match check_email_with_timeout(input, retry_option).await {
-		Ok((result, retry_option)) => {
-			if known_errors::has_known_errors(&result, retry_option) {
-				if count <= 1 {
-					Ok((result, retry_option))
-				} else {
-					retry(input, retry_option, count - 1).await
-				}
-			} else {
-				Ok((result, retry_option))
-			}
+	let result = ciee_check_email(&input)
+		.await
+		.pop()
+		.expect("Input contains one email, so does output. qed.");
+
+	log::debug!(
+		target:"reacher",
+		"[email={}] Got result with retry option {}, attempt #{}, is_reachable={:?}",
+		input.to_emails[0],
+		retry_option,
+		count,
+		result.is_reachable
+	);
+
+	// If we get an unknown error, log it.
+	known_errors::log_unknown_errors(&result, retry_option);
+
+	if result.is_reachable == Reachable::Unknown {
+		if count <= 1 {
+			Err(CheckEmailError::Unknown((result, retry_option)))
+		} else {
+			retry(input, retry_option, count - 1).await
 		}
-		Err(err) => {
-			if count <= 1 {
-				Err(err)
-			} else {
-				retry(input, retry_option, count - 1).await
-			}
-		}
+	} else {
+		Ok((result, retry_option))
 	}
 }
 
@@ -203,58 +168,46 @@ async fn check_email(
 	// - one connecting directly to the SMTP server,
 	// - the other one connecting to it via Tor.
 	// Then race these 2 futures.
-	let result = race_future2(
+	let (value, retry_option) = match race_future2(
 		create_check_email_future(&body, false),
 		create_check_email_future(&body, true),
 	)
-	.await;
-
-	match result {
-		// Show a 200 response if we have either a successful email check, or
-		// if we had an is_reachable Unknown.
-		Ok((value, retry_option))
-		| Err((CheckEmailError::Unknown((value, retry_option)), _))
-		| Err((_, CheckEmailError::Unknown((value, retry_option)))) => {
-			// Log on Sentry the `is_reachable` field.
-			// FIXME We should definitely log this somehwere else than Sentry.
-			sentry_util::info(
-				format!("is_reachable={:?}", value.is_reachable),
-				retry_option,
-				now.elapsed().as_millis(),
-			);
-
-			// Add a usage record in the db, if the Reacher api token is
-			// present.
-			if let HeaderSecret::Reacher(api_token) = header_secret {
-				// Get connection from pool.
-				let conn = pool.get().map_err(pg_to_warp_error)?;
-
-				models::api_usage_record::create_api_usage_record(
-					&conn,
-					api_token.id,
-					"POST",
-					"/check_email",
-				)
-				.map_err(|err| {
-					reject::custom(ReacherResponseError::new(
-						http::StatusCode::INTERNAL_SERVER_ERROR,
-						err.to_string(),
-					))
-				})?;
-			}
-
-			Ok(warp::reply::json(&value))
+	.await
+	{
+		Ok((value, retry_option)) | Err((CheckEmailError::Unknown((value, retry_option)), _)) => {
+			(value, retry_option)
 		}
-		Err((err, _)) => {
-			// `err` will be a TimeoutError here.
-			sentry_util::error(format!("POST /check_email error: {:?}", err), None, None);
+	};
 
-			Err(reject::custom(ReacherResponseError::new(
-				http::StatusCode::REQUEST_TIMEOUT,
-				format!("{:?}", err),
-			)))
-		}
+	// Log on Sentry the `is_reachable` field.
+	// FIXME We should definitely log this somehwere else than Sentry.
+	sentry_util::info(
+		format!("is_reachable={:?}", value.is_reachable),
+		retry_option,
+		now.elapsed().as_millis(),
+	);
+
+	// Add a usage record in the db, if the Reacher api token is
+	// present.
+	if let HeaderSecret::Reacher(api_token) = header_secret {
+		// Get connection from pool.
+		let conn = pool.get().map_err(pg_to_warp_error)?;
+
+		models::api_usage_record::create_api_usage_record(
+			&conn,
+			api_token.id,
+			"POST",
+			"/check_email",
+		)
+		.map_err(|err| {
+			reject::custom(ReacherResponseError::new(
+				http::StatusCode::INTERNAL_SERVER_ERROR,
+				err.to_string(),
+			))
+		})?;
 	}
+
+	Ok(warp::reply::json(&value))
 }
 
 /// Filter to add the DB connection into handlers.
