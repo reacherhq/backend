@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.3](https://github.com/reacherhq/backend/compare/v0.3.2...v0.3.3) (2020-09-24)
+
+
+### Bug Fixes
+
+* Show timeout error message in JSON ([#134](https://github.com/reacherhq/backend/issues/134)) ([8341fcd](https://github.com/reacherhq/backend/commit/8341fcdfbb0cb002c11db237122144999804000a))
+
 ### [0.3.2](https://github.com/reacherhq/backend/compare/v0.3.1...v0.3.2) (2020-09-23)
 
 
