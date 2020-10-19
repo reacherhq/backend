@@ -12,7 +12,7 @@ check-if-email-exists = "0.8"
 chrono = "0.4"
 diesel = { version = "1.4", features = ["chrono", "postgres", "r2d2", "uuidv07"] }
 diesel_migrations = "1.4"
-env_logger = "0.7"
+env_logger = "0.8"
 futures = "0.3"
 log = "0.4"
 sentry = "0.20"
