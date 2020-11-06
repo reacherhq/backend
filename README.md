@@ -3,8 +3,9 @@
 
 <br /><br /><br />
 
-<h1 align="center">Reacher Backend</h1>
-<h4 align="center">Backend Server for Reacher Email Verification API.</h4>
+<p align="center"><img align="center" src="https://storage.googleapis.com/saasify-uploads-prod/696e287ad79f0e0352bc201b36d701849f7d55e7.svg" height="96" alt="reacher" /></p>
+<h1 align="center">⚙️ Reacher Backend</h1>
+<h4 align="center">Backend Server for Reacher Email Verification API: https://reacher.email.</h4>
 
 <br /><br /><br />
 
@@ -21,7 +22,7 @@ Also check the [`openapi.json`](./openapi.json) file for the OpenAPI v3 specific
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend)
 
-To run the server locally on your machine, just clone the repository and run:
+If you prefer to run the server locally on your machine, just clone the repository and run:
 
 ```bash
 cargo run
@@ -41,4 +42,4 @@ These are the environment variables used to configure the HTTP server:
 
 ## Sponsor my Open-Source Work
 
-If you would like a high free tier to test Reacher, consider [sponsoring me](https://github.com/sponsors/amaurymartiny/)! You'll get 8000 free email verifications every month, and a this contribution would mean A WHOLE LOT to me.
+If you like my open-source work, consider [sponsoring me](https://github.com/sponsors/amaurymartiny/)! You'll also get 8000 free email verifications every month with your Reacher account, and a this contribution would mean A WHOLE LOT to me.
