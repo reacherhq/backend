@@ -28,8 +28,6 @@ embed_migrations!();
 ///
 /// If at least one of the environment variables:
 /// - RCH_HTTP_HOST
-/// - RCH_PROXY_HOST
-/// - RCH_PROXY_PORT
 /// is malformed, then the program will panic.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
