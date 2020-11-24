@@ -76,7 +76,7 @@ pub fn error(message: String, result: Option<&str>, retry_option: Option<RetryOp
 		extra.insert("CheckEmailOutput".into(), result.into());
 	}
 	if let Some(retry_option) = retry_option {
-		extra.insert("proxy_option".into(), retry_option.to_string().into());
+		extra.insert("retry_option".into(), retry_option.to_string().into());
 	}
 	extra = add_heroku_app_name(extra);
 

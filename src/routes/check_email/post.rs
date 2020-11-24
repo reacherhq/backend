@@ -19,7 +19,7 @@
 use super::{
 	header::{check_header, HeaderSecret},
 	known_errors,
-	util::{pg_to_warp_error, race_future2},
+	util::pg_to_warp_error,
 };
 use crate::{db::PgPool, errors::ReacherResponseError, models, sentry_util};
 use async_recursion::async_recursion;
@@ -48,10 +48,10 @@ pub struct EndpointRequest {
 
 /// This option represents how we should execute the SMTP connection to check
 /// an email.
+/// For now, we only support directly connecting to the SMTP server, but in the
+/// future, we might try proxying.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RetryOption {
-	/// Use Tor to connect to the SMTP server.
-	Tor,
 	/// Heroku connects to the SMTP server directly.
 	Direct,
 }
@@ -74,7 +74,6 @@ enum CheckEmailError {
 /// verification.
 async fn create_check_email_future(
 	body: &EndpointRequest,
-	use_tor: bool,
 ) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
 	// FIXME Can we not clone?
 	let body = body.clone();
@@ -87,27 +86,10 @@ async fn create_check_email_future(
 		}))
 		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
-	// If `use_tor` and relevant ENV vars are set, we proxy.
-	if use_tor {
-		if let (Ok(proxy_host), Ok(proxy_port)) =
-			(env::var("RCH_PROXY_HOST"), env::var("RCH_PROXY_PORT"))
-		{
-			if let Ok(proxy_port) = proxy_port.parse::<u16>() {
-				input.proxy(proxy_host, proxy_port);
-			}
-		}
-	}
-
-	let retry_option = if use_tor {
-		RetryOption::Tor
-	} else {
-		RetryOption::Direct
-	};
-
 	input.smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
 
 	// Retry each future twice, to avoid grey-listing.
-	retry(&input, retry_option, 2).await
+	retry(&input, RetryOption::Direct, 2).await
 }
 
 /// Retry the check ciee_check_email function, in particular to avoid
@@ -164,17 +146,9 @@ async fn check_email(
 	// verification time.
 	let now = Instant::now();
 
-	// Create 2 futures:
-	// - one connecting directly to the SMTP server,
-	// - the other one connecting to it via Tor.
-	// Then race these 2 futures.
-	let (value, retry_option) = match race_future2(
-		create_check_email_future(&body, false),
-		create_check_email_future(&body, true),
-	)
-	.await
-	{
-		Ok((value, retry_option)) | Err((CheckEmailError::Unknown((value, retry_option)), _)) => {
+	// Run the future to check an email.
+	let (value, retry_option) = match create_check_email_future(&body).await {
+		Ok((value, retry_option)) | Err(CheckEmailError::Unknown((value, retry_option))) => {
 			(value, retry_option)
 		}
 	};
