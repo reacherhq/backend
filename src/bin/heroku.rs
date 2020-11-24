@@ -14,13 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[macro_use]
-extern crate diesel_migrations;
-
-use reacher_backend::{db::connect_db, routes::create_routes, sentry_util::setup_sentry};
+use reacher_backend::{routes::create_routes, sentry_util::setup_sentry};
 use std::{env, net::IpAddr};
-
-embed_migrations!();
 
 /// Run a HTTP server using warp.
 ///
@@ -34,16 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 	let _guard = setup_sentry();
 
-	let database_url =
-		env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set.");
-	let pool = connect_db(&database_url);
-	let connection = pool
-		.get()
-		.unwrap_or_else(|_| panic!("Cannot connect to DB at {}.", database_url));
-
-	embedded_migrations::run(&connection)?;
-
-	let routes = create_routes(pool);
+	let routes = create_routes();
 
 	let host = env::var("RCH_HTTP_HOST")
 		.unwrap_or_else(|_| "127.0.0.1".into())

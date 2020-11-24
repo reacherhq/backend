@@ -28,12 +28,6 @@ pub struct ReacherResponseError {
 	message: String,
 }
 
-impl ReacherResponseError {
-	pub fn new(code: http::StatusCode, message: String) -> Self {
-		ReacherResponseError { code, message }
-	}
-}
-
 impl reject::Reject for ReacherResponseError {}
 
 /// This function receives a `Rejection` and tries to return a custom value,

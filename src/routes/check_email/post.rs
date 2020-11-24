@@ -19,20 +19,18 @@
 use super::{
 	header::{check_header, HeaderSecret},
 	known_errors,
-	util::pg_to_warp_error,
 };
-use crate::{db::PgPool, errors::ReacherResponseError, models, sentry_util};
+use crate::sentry_util;
 use async_recursion::async_recursion;
 use check_if_email_exists::{
 	check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput, Reachable,
 };
 use serde::{Deserialize, Serialize};
 use std::{
-	convert::Infallible,
 	env, fmt,
 	time::{Duration, Instant},
 };
-use warp::{http, reject, Filter};
+use warp::Filter;
 
 /// Timeout after which we drop the `check-if-email-exists` check. We run the
 /// checks twice (to avoid greylisting), so each verification takes 20s max.
@@ -138,8 +136,7 @@ async fn retry(
 
 /// The main `check_email` function that implements the logic of this route.
 async fn check_email(
-	pool: PgPool,
-	header_secret: HeaderSecret,
+	_: HeaderSecret,
 	body: EndpointRequest,
 ) -> Result<impl warp::Reply, warp::Rejection> {
 	// Run `ciee_check_email` with retries if necessary. Also measure the
@@ -155,48 +152,22 @@ async fn check_email(
 
 	// Log on Sentry the `is_reachable` field.
 	// FIXME We should definitely log this somehwere else than Sentry.
-	sentry_util::info(
+	sentry_util::metrics(
 		format!("is_reachable={:?}", value.is_reachable),
 		retry_option,
 		now.elapsed().as_millis(),
+		value.syntax.domain.as_ref(),
 	);
-
-	// Add a usage record in the db, if the Reacher api token is
-	// present.
-	if let HeaderSecret::Reacher(api_token) = header_secret {
-		// Get connection from pool.
-		let conn = pool.get().map_err(pg_to_warp_error)?;
-
-		models::api_usage_record::create_api_usage_record(
-			&conn,
-			api_token.id,
-			"POST",
-			"/check_email",
-		)
-		.map_err(|err| {
-			reject::custom(ReacherResponseError::new(
-				http::StatusCode::INTERNAL_SERVER_ERROR,
-				err.to_string(),
-			))
-		})?;
-	}
 
 	Ok(warp::reply::json(&value))
 }
 
-/// Filter to add the DB connection into handlers.
-fn with_db_pool(pool: PgPool) -> impl Filter<Extract = (PgPool,), Error = Infallible> + Clone {
-	warp::any().map(move || pool.clone())
-}
-
 /// Create the `POST /check_email` endpoint.
-pub fn post_check_email(
-	pool: PgPool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn post_check_email() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+{
 	warp::path!("v0" / "check_email")
 		.and(warp::post())
-		.and(with_db_pool(pool.clone()))
-		.and(check_header(pool))
+		.and(check_header())
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		.and(warp::body::content_length_limit(1024 * 16))
