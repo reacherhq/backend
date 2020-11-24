@@ -19,7 +19,7 @@
 use super::{
 	header::{check_header, HeaderSecret},
 	known_errors,
-	util::{pg_to_warp_error, race_future2},
+	util::pg_to_warp_error,
 };
 use crate::{db::PgPool, errors::ReacherResponseError, models, sentry_util};
 use async_recursion::async_recursion;
