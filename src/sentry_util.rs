@@ -55,7 +55,7 @@ pub fn metrics(message: String, retry_option: RetryOption, duration: u128, domai
 
 	extra.insert("duration".into(), duration.to_string().into());
 	extra.insert("retry_option".into(), retry_option.to_string().into());
-	extra.insert("domain".into(),domain.into());
+	extra.insert("domain".into(), domain.into());
 	extra = add_heroku_app_name(extra);
 
 	sentry::capture_event(Event {
