@@ -17,4 +17,3 @@
 pub mod header;
 mod known_errors;
 pub mod post;
-mod util;
