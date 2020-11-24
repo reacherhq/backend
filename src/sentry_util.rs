@@ -46,14 +46,16 @@ fn add_heroku_app_name(mut extra: BTreeMap<String, Value>) -> BTreeMap<String, V
 	extra
 }
 
-/// Helper function to send an Info event to Sentry.
-pub fn info(message: String, retry_option: RetryOption, duration: u128) {
+/// Helper function to send an Info event to Sentry. We use these events for
+/// analytics purposes (I know, Sentry shouldn't be used for that...).
+pub fn metrics(message: String, retry_option: RetryOption, duration: u128, domain: &str) {
 	log::info!("Sending info to Sentry: {}", message);
 
 	let mut extra = BTreeMap::new();
 
 	extra.insert("duration".into(), duration.to_string().into());
 	extra.insert("retry_option".into(), retry_option.to_string().into());
+	extra.insert("domain".into(),domain.into());
 	extra = add_heroku_app_name(extra);
 
 	sentry::capture_event(Event {

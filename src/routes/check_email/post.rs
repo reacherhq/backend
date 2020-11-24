@@ -152,10 +152,11 @@ async fn check_email(
 
 	// Log on Sentry the `is_reachable` field.
 	// FIXME We should definitely log this somehwere else than Sentry.
-	sentry_util::info(
+	sentry_util::metrics(
 		format!("is_reachable={:?}", value.is_reachable),
 		retry_option,
 		now.elapsed().as_millis(),
+		value.syntax.domain.as_ref(),
 	);
 
 	Ok(warp::reply::json(&value))
