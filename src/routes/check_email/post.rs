@@ -73,7 +73,7 @@ enum CheckEmailError {
 /// Converts an endpoint request body into a future that performs email
 /// verification.
 async fn create_check_email_future(
-	body: &EndpointRequest
+	body: &EndpointRequest,
 ) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
 	// FIXME Can we not clone?
 	let body = body.clone();
@@ -147,8 +147,7 @@ async fn check_email(
 	let now = Instant::now();
 
 	// Run the future to check an email.
-	let (value, retry_option) = match create_check_email_future(&body).await
-	{
+	let (value, retry_option) = match create_check_email_future(&body).await {
 		Ok((value, retry_option)) | Err(CheckEmailError::Unknown((value, retry_option))) => {
 			(value, retry_option)
 		}
