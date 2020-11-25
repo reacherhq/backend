@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.4](https://github.com/reacherhq/backend/compare/v0.3.3...v0.3.4) (2020-11-25)
+
+
+### Features
+
+* Remove diesel and DB ([#157](https://github.com/reacherhq/backend/issues/157)) ([bbbfe1b](https://github.com/reacherhq/backend/commit/bbbfe1b3fd9b35cb8e852684943a9b426296471b))
+* Stop using Tor ([#156](https://github.com/reacherhq/backend/issues/156)) ([dee3043](https://github.com/reacherhq/backend/commit/dee304335d937e0f9bc9c70963a8b5a00f97eaa8))
+
 ### [0.3.3](https://github.com/reacherhq/backend/compare/v0.3.2...v0.3.3) (2020-09-24)
 
 
