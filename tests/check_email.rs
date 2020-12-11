@@ -26,7 +26,7 @@ use warp::http::StatusCode;
 use warp::test::request;
 
 const FOO_BAR_RESPONSE: &str = r#"{"input":"foo@bar","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":null,"domain":"","is_valid_syntax":false,"username":""}}"#;
-const FOO_BAR_BAZ_RESPONSE:&str = r#"{"input":"foo@bar.baz","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#;
+const FOO_BAR_BAZ_RESPONSE: &str = r#"{"input":"foo@bar.baz","is_reachable":"invalid","misc":{"is_disposable":false,"is_role_account":false},"mx":{"accepts_mail":false,"records":[]},"smtp":{"can_connect_smtp":false,"has_full_inbox":false,"is_catch_all":false,"is_deliverable":false,"is_disabled":false},"syntax":{"address":"foo@bar.baz","domain":"bar.baz","is_valid_syntax":true,"username":"foo"}}"#;
 
 #[tokio::test]
 async fn test_missing_header() {
@@ -39,10 +39,7 @@ async fn test_missing_header() {
 
 	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-	assert_eq!(
-		resp.body(),
-		r#"Missing request header "authorization""#
-	);
+	assert_eq!(resp.body(), r#"Missing request header "authorization""#);
 }
 
 #[tokio::test]
@@ -57,10 +54,7 @@ async fn test_wrong_saasify_secret() {
 
 	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-	assert_eq!(
-		resp.body(),
-		r#"Missing request header "authorization""#
-	);
+	assert_eq!(resp.body(), r#"Missing request header "authorization""#);
 }
 
 #[tokio::test]
@@ -74,7 +68,7 @@ async fn test_input_foo_bar() {
 		.await;
 
 	assert_eq!(resp.status(), StatusCode::OK);
-	assert_eq!(resp.body(),FOO_BAR_RESPONSE);
+	assert_eq!(resp.body(), FOO_BAR_RESPONSE);
 }
 
 #[tokio::test]
@@ -88,7 +82,7 @@ async fn test_input_foo_bar_baz() {
 		.await;
 
 	assert_eq!(resp.status(), StatusCode::OK);
-	assert_eq!(resp.body(),FOO_BAR_BAZ_RESPONSE);
+	assert_eq!(resp.body(), FOO_BAR_BAZ_RESPONSE);
 }
 
 #[tokio::test]
@@ -102,7 +96,7 @@ async fn test_authorization_header() {
 		.await;
 
 	assert_eq!(resp.status(), StatusCode::OK);
-	assert_eq!(resp.body(),FOO_BAR_BAZ_RESPONSE);
+	assert_eq!(resp.body(), FOO_BAR_BAZ_RESPONSE);
 }
 
 #[tokio::test]
@@ -116,5 +110,5 @@ async fn test_authorization_capital_header() {
 		.await;
 
 	assert_eq!(resp.status(), StatusCode::OK);
-	assert_eq!(resp.body(),FOO_BAR_BAZ_RESPONSE);
+	assert_eq!(resp.body(), FOO_BAR_BAZ_RESPONSE);
 }
