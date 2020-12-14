@@ -40,8 +40,6 @@ fn get_saasify_secret() -> String {
 /// for auth that match:
 /// - `x-saasify-proxy-secret`: this means auth is handled by saasify, we don't
 /// care about auth anymore.
-/// - `Authorization`: this is a temporary fix to allow all requests with this
-/// header.
 pub fn check_header(
 ) -> impl warp::Filter<Extract = (HeaderSecret,), Error = warp::Rejection> + Clone {
 	let saasify_secret = get_saasify_secret();

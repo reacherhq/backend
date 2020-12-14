@@ -39,7 +39,7 @@ async fn test_missing_header() {
 
 	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-	assert_eq!(resp.body(), r#"Missing request header "authorization""#);
+	assert_eq!(resp.body(), r#"Missing request header "x-saasify-proxy-secret""#);
 }
 
 #[tokio::test]
@@ -54,7 +54,7 @@ async fn test_wrong_saasify_secret() {
 
 	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-	assert_eq!(resp.body(), r#"Missing request header "authorization""#);
+	assert_eq!(resp.body(), r#"Invalid request header "x-saasify-proxy-secret""#);
 }
 
 #[tokio::test]
@@ -77,34 +77,6 @@ async fn test_input_foo_bar_baz() {
 		.path("/v0/check_email")
 		.method("POST")
 		.header(SAASIFY_SECRET_HEADER, DEFAULT_SAASIFY_SECRET)
-		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
-		.reply(&create_routes())
-		.await;
-
-	assert_eq!(resp.status(), StatusCode::OK);
-	assert_eq!(resp.body(), FOO_BAR_BAZ_RESPONSE);
-}
-
-#[tokio::test]
-async fn test_authorization_header() {
-	let resp = request()
-		.path("/v0/check_email")
-		.method("POST")
-		.header("authorization", "foo")
-		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
-		.reply(&create_routes())
-		.await;
-
-	assert_eq!(resp.status(), StatusCode::OK);
-	assert_eq!(resp.body(), FOO_BAR_BAZ_RESPONSE);
-}
-
-#[tokio::test]
-async fn test_authorization_capital_header() {
-	let resp = request()
-		.path("/v0/check_email")
-		.method("POST")
-		.header("Authorization", "foo")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 		.reply(&create_routes())
 		.await;
