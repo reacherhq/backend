@@ -39,7 +39,10 @@ async fn test_missing_header() {
 
 	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-	assert_eq!(resp.body(), r#"Missing request header "x-saasify-proxy-secret""#);
+	assert_eq!(
+		resp.body(),
+		r#"Missing request header "x-saasify-proxy-secret""#
+	);
 }
 
 #[tokio::test]
@@ -54,7 +57,10 @@ async fn test_wrong_saasify_secret() {
 
 	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-	assert_eq!(resp.body(), r#"Invalid request header "x-saasify-proxy-secret""#);
+	assert_eq!(
+		resp.body(),
+		r#"Invalid request header "x-saasify-proxy-secret""#
+	);
 }
 
 #[tokio::test]
