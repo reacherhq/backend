@@ -27,7 +27,6 @@ pub const DEFAULT_SAASIFY_SECRET: &str = "reacher_dev_secret";
 /// but there might be others in the future
 #[derive(Debug, PartialEq)]
 pub enum HeaderSecret {
-	Authorization,
 	Saasify,
 }
 
@@ -51,6 +50,4 @@ pub fn check_header(
 
 	warp::header::exact_ignore_case(SAASIFY_SECRET_HEADER, saasify_secret)
 		.map(|| HeaderSecret::Saasify)
-		.or(warp::header::<String>("authorization").map(|_| HeaderSecret::Authorization))
-		.unify()
 }
