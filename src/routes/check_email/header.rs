@@ -27,7 +27,6 @@ pub const DEFAULT_SAASIFY_SECRET: &str = "reacher_dev_secret";
 /// but there might be others in the future
 #[derive(Debug, PartialEq)]
 pub enum HeaderSecret {
-	Authorization,
 	Saasify,
 }
 
@@ -41,8 +40,6 @@ fn get_saasify_secret() -> String {
 /// for auth that match:
 /// - `x-saasify-proxy-secret`: this means auth is handled by saasify, we don't
 /// care about auth anymore.
-/// - `Authorization`: this is a temporary fix to allow all requests with this
-/// header.
 pub fn check_header(
 ) -> impl warp::Filter<Extract = (HeaderSecret,), Error = warp::Rejection> + Clone {
 	let saasify_secret = get_saasify_secret();
@@ -51,6 +48,4 @@ pub fn check_header(
 
 	warp::header::exact_ignore_case(SAASIFY_SECRET_HEADER, saasify_secret)
 		.map(|| HeaderSecret::Saasify)
-		.or(warp::header::<String>("authorization").map(|_| HeaderSecret::Authorization))
-		.unify()
 }
