@@ -39,6 +39,21 @@ These are the environment variables used to configure the HTTP server:
 | `PORT`           | No        | The port to bind the HTTP server to, populated by Heroku. | `8080`             |
 | `RCH_SENTRY_DSN` | No        | [Sentry](https://sentry.io) DSN used for bug reports.     | not defined        |
 
+## Licensing
+
+`reacherhq/backend`'s source code is provided under a **dual license model** designed to meet the development and distribution needs of both commercial and open-source projects.
+
+If you want to use this library to build closed-sourced commercial sites and applications, then you'll need to purchase a commercial license. This allows you to keep your software proprietary whilst still using `reacherhq/backend`. You can [purchase a commercial license here](https://reacher.email/pricing). A commercial license grants you:
+
+-   On-premise running as well as running on public cloud providers for commercial purposes for proprietary systems.
+-   Ability to modify the source (forking) for your own purposes.
+
+Not only does it grant you a license to run such a critical piece of infrastructure, but you are also supporting further innovation in this space and our ability to contribute to it!
+
+If you are creating an open source application under a license compatible with the Affero GNU GPL license v3, you may use `reacherhq/backend` under the terms of the AGPLv3. You can read more about this license [here](./LICENSE.AGPL).
+
+Please read the [LICENSE](./LICENSE.md) file for more information about the dual license.
+
 ## Sponsor my Open-Source Work
 
-If you like my open-source work, consider [sponsoring me](https://github.com/sponsors/amaurymartiny/)! You'll also get 8000 free email verifications every month with your Reacher account, and a this contribution would mean A WHOLE LOT to me.
+If you like my open-source work at Reacher, consider [sponsoring me](https://github.com/sponsors/amaurymartiny/)! You'll also get 8000 free email verifications every month with your Reacher account, and a this contribution would mean A WHOLE LOT to me.
