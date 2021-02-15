@@ -16,7 +16,29 @@ This repository holds the backend for [Reacher](https://reacher.email). The back
 
 ## Get Started
 
+### 1. One-Click Deploy to Heroku
+
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend)
+
+### 2. Use Docker
+
+The [Docker image](./Dockerfile) is hosted on Docker Hub: https://hub.docker.com/r/reacherhq/backend.
+
+To run it, run the following command:
+
+```bash
+docker run -p 3000:3000 reacherhq/backend
+```
+
+You can then send a POST request with the following body to `http://localhost:8080/v0/check_email`:
+
+```json
+{
+	"to_email": "someone@gmail.com"
+}
+```
+
+### 3. Run locally
 
 If you prefer to run the server locally on your machine, just clone the repository and run:
 
@@ -25,6 +47,8 @@ cargo run
 ```
 
 The server will then be listening on `http://127.0.0.1:8080`.
+
+### Configuration
 
 These are the environment variables used to configure the HTTP server:
 
