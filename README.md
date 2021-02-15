@@ -16,6 +16,8 @@ This repository holds the backend for [Reacher](https://reacher.email). The back
 
 ## Get Started
 
+There are 3 ways you can run this backend.
+
 ### 1. One-Click Deploy to Heroku
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend)
