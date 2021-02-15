@@ -66,7 +66,7 @@ These are the environment variables used to configure the HTTP server:
 
 ## REST API Documentation
 
-See https://reacher.email/docs.
+See https://help.reacher.email/rest-api-documentation.
 
 Also check the [`openapi.json`](./openapi.json) file for the OpenAPI v3 specification of the backend's API.
 
