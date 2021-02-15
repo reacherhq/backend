@@ -20,6 +20,8 @@ This repository holds the backend for [Reacher](https://reacher.email). The back
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend)
 
+After clicking on the button, just follow the instructions on screen.
+
 ### 2. Use Docker
 
 The [Docker image](./Dockerfile) is hosted on Docker Hub: https://hub.docker.com/r/reacherhq/backend.
