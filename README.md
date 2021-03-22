@@ -70,6 +70,8 @@ See https://help.reacher.email/rest-api-documentation.
 
 Also check the [`openapi.json`](./openapi.json) file for the OpenAPI v3 specification of the backend's API.
 
+## License
+
 `reacherhq/backend`'s source code is provided under a **dual license model**.
 
 ### Commercial license
