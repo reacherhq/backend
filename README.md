@@ -1,5 +1,5 @@
 [![Actions Status](https://github.com/reacherhq/backend/workflows/pr/badge.svg)](https://github.com/reacherhq/backend/actions)
-[![Github Sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&link=https://github.com/sponsors/amaurymartiny)](https://github.com/sponsors/amaurymartiny)
+[![Github Sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&link=https://github.com/sponsors/amaurym)](https://github.com/sponsors/amaurym)
 
 <br /><br />
 
@@ -11,7 +11,7 @@
 
 This repository holds the backend for [Reacher](https://reacher.email). The backend is a HTTP server with the following components:
 
--   [`check-if-email-exists`](https://github.com/amaurymartiny/check-if-email-exists), which performs the core email verification logic,
+-   [`check-if-email-exists`](https://github.com/reacherhq/check-if-email-exists), which performs the core email verification logic,
 -   [`warp`](https://github.com/seanmonstar/warp) web framework.
 
 ## Get Started
@@ -86,4 +86,4 @@ If you are creating an open source application under a license compatible with t
 
 ## Sponsor my Open-Source Work
 
-If you like my open-source work at Reacher, consider [sponsoring me](https://github.com/sponsors/amaurymartiny/)! You'll also get 8000 free email verifications every month with your Reacher account, and a this contribution would mean A WHOLE LOT to me.
+If you like my open-source work at Reacher, consider [sponsoring me](https://github.com/sponsors/amaurym/)! You'll also get 8000 free email verifications every month with your Reacher account, and a this contribution would mean A WHOLE LOT to me.
