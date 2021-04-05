@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.8](https://github.com/reacherhq/backend/compare/v0.3.7...v0.3.8) (2021-04-05)
+
+
+### Features
+
+* Add Dockerfile ([#184](https://github.com/reacherhq/backend/issues/184)) ([9afbfe0](https://github.com/reacherhq/backend/commit/9afbfe0685d6e55257f7634414f9d9db812519ad))
+
+
+### Bug Fixes
+
+* Update check-if-email-exists deps ([#197](https://github.com/reacherhq/backend/issues/197)) ([cc8f3f0](https://github.com/reacherhq/backend/commit/cc8f3f054bbc3626d4c0f085aa3b02e266eff227))
+
 ### [0.3.7](https://github.com/reacherhq/backend/compare/v0.3.6...v0.3.7) (2021-01-10)
 
 ### [0.3.6](https://github.com/reacherhq/backend/compare/v0.3.5...v0.3.6) (2020-12-14)
