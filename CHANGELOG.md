@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.9](https://github.com/reacherhq/backend/compare/v0.3.8...v0.3.9) (2021-06-20)
+
+
+### Features
+
+* Add `proxy` field to check_email body ([#205](https://github.com/reacherhq/backend/issues/205)) ([0a54c31](https://github.com/reacherhq/backend/commit/0a54c315dff569fdf30d2edb0ad1769477816aca))
+* Make `x-saasify-proxy-secret` optional ([#204](https://github.com/reacherhq/backend/issues/204)) ([258314e](https://github.com/reacherhq/backend/commit/258314eb47eaec308b5818acde7d18777630cf35))
+
 ### [0.3.8](https://github.com/reacherhq/backend/compare/v0.3.7...v0.3.8) (2021-04-05)
 
 
