@@ -37,7 +37,6 @@ async fn test_missing_header() {
 		.reply(&create_routes())
 		.await;
 
-	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 	assert_eq!(
 		resp.body(),
@@ -57,7 +56,6 @@ async fn test_wrong_saasify_secret() {
 		.reply(&create_routes())
 		.await;
 
-	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 	assert_eq!(
 		resp.body(),
