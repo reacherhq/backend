@@ -20,7 +20,8 @@ use super::{header::check_header, known_errors};
 use crate::sentry_util;
 use async_recursion::async_recursion;
 use check_if_email_exists::{
-	check_email as ciee_check_email, CheckEmailInput, CheckEmailOutput, Reachable,
+	check_email as ciee_check_email, CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput,
+	Reachable,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -38,6 +39,7 @@ const SMTP_THRESHOLD: u64 = 10;
 pub struct EndpointRequest {
 	from_email: Option<String>,
 	hello_name: Option<String>,
+	proxy: Option<CheckEmailInputProxy>,
 	to_email: String,
 }
 
@@ -80,6 +82,10 @@ async fn create_check_email_future(
 			env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
 		}))
 		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
+
+	if let Some(proxy_input) = body.proxy {
+		input.proxy(proxy_input.host, proxy_input.port);
+	}
 
 	input.smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
 
