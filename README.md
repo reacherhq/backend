@@ -39,9 +39,9 @@ You can then send a POST request with the following body to `http://localhost:80
 ```js
 {
 	"to_email": "someone@gmail.com",
-	"from_email": "my@my-server.com", // optional, defaults to "user@example.org"
-	"hello_name": "my-server.com",    // optional, defaults to "localhost"
-	"proxy": {                        // optional, default is empty
+	"from_email": "my@my-server.com", // (optional) email to use in the `FROM` SMTP command, defaults to "user@example.org"
+	"hello_name": "my-server.com",    // (optional) name to use in the `EHLO` SMTP command, defaults to "localhost"
+	"proxy": {                        // (optional) SOCK5 proxy to run the verification through, default is empty
 		"host": "my-proxy.io",
 		"port": "1080"
 	}
@@ -79,9 +79,9 @@ The API basically only exposes one endpoint: `POST /v0/check_email` expecting th
 ```js
 {
 	"to_email": "someone@gmail.com",
-	"from_email": "my@my-server.com", // optional, defaults to "user@example.org"
-	"hello_name": "my-server.com",    // optional, defaults to "localhost"
-	"proxy": {                        // optional, default is empty
+	"from_email": "my@my-server.com", // (optional) email to use in the `FROM` SMTP command, defaults to "user@example.org"
+	"hello_name": "my-server.com",    // (optional) name to use in the `EHLO` SMTP command, defaults to "localhost"
+	"proxy": {                        // (optional) SOCK5 proxy to run the verification through, default is empty
 		"host": "my-proxy.io",
 		"port": "1080"
 	}
