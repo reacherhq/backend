@@ -20,32 +20,19 @@ use warp::Filter;
 /// The header which holds the Saasify secret.
 pub const SAASIFY_SECRET_HEADER: &str = "x-saasify-proxy-secret";
 
-/// The fallback saasify secret, used in tests and staging.
-pub const DEFAULT_SAASIFY_SECRET: &str = "reacher_dev_secret";
-
-/// The secret we retrieve from the headers. For now it's a Saasify secret,
-/// but there might be others in the future
-#[derive(Debug, PartialEq)]
-pub enum HeaderSecret {
-	Saasify,
-}
-
-/// Get the server's Saasify secret, either from ENV, or use the fallback dev
-/// secret.
-fn get_saasify_secret() -> String {
-	env::var("RCH_SAASIFY_SECRET").unwrap_or_else(|_| DEFAULT_SAASIFY_SECRET.into())
-}
-
 /// Warp filter to check that the header secret is correct. We accept headers
 /// for auth that match:
 /// - `x-saasify-proxy-secret`: this means auth is handled by saasify, we don't
 /// care about auth anymore.
-pub fn check_header(
-) -> impl warp::Filter<Extract = (HeaderSecret,), Error = warp::Rejection> + Clone {
-	let saasify_secret = get_saasify_secret();
-	// See https://github.com/seanmonstar/warp/issues/503.
-	let saasify_secret: &'static str = Box::leak(Box::new(saasify_secret));
+pub fn check_header() -> warp::filters::BoxedFilter<()> {
+	let env_var = env::var("RCH_SAASIFY_SECRET");
 
-	warp::header::exact_ignore_case(SAASIFY_SECRET_HEADER, saasify_secret)
-		.map(|| HeaderSecret::Saasify)
+	match env_var {
+		Ok(saasify_secret) => {
+			let saasify_secret: &'static str = Box::leak(Box::new(saasify_secret));
+
+			warp::header::exact("x-saasify-proxy-secret", saasify_secret).boxed()
+		}
+		Err(_) => warp::any().boxed(),
+	}
 }

@@ -56,13 +56,13 @@ The server will then be listening on `http://127.0.0.1:8080`.
 
 These are the environment variables used to configure the HTTP server:
 
-| Env Var              | Required? | Description                                                                                                                                                                 | Default              |
-| -------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| `RCH_FROM_EMAIL`     | No        | The email to use in the `MAIL FROM:` SMTP command.                                                                                                                          | `user@example.org`   |
-| `RCH_HTTP_HOST`      | No        | The host name to bind the HTTP server to.                                                                                                                                   | `127.0.0.1`          |
-| `PORT`               | No        | The port to bind the HTTP server to, populated by Heroku.                                                                                                                   | `8080`               |
-| `RCH_SENTRY_DSN`     | No        | [Sentry](https://sentry.io) DSN used for bug reports.                                                                                                                       | not defined          |
-| `RCH_SAASIFY_SECRET` | No        | All requests must have a `x-saasify-proxy-secret` header set, equal to the value of `RCH_SAASIFY_SECRET`. Also see [#185](https://github.com/reacherhq/backend/issues/185). | `reacher_dev_secret` |
+| Env Var              | Required? | Description                                                                                                       | Default            |
+| -------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `RCH_FROM_EMAIL`     | No        | The email to use in the `MAIL FROM:` SMTP command.                                                                | `user@example.org` |
+| `RCH_HTTP_HOST`      | No        | The host name to bind the HTTP server to.                                                                         | `127.0.0.1`        |
+| `PORT`               | No        | The port to bind the HTTP server to, populated by Heroku.                                                         | `8080`             |
+| `RCH_SENTRY_DSN`     | No        | If set, bug reports will be sent to this [Sentry](https://sentry.io) DSN.                                         | not defined        |
+| `RCH_SAASIFY_SECRET` | No        | If set, all requests must have a `x-saasify-proxy-secret` header set, equal to the value of `RCH_SAASIFY_SECRET`. | not defined        |
 
 ## REST API Documentation
 
