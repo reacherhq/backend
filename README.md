@@ -38,7 +38,16 @@ You can then send a POST request with the following body to `http://localhost:80
 
 ```json
 {
-	"to_email": "someone@gmail.com"
+	"to_email": "someone@gmail.com",
+	// optional, defaults to "user@example.org"
+	"from_email": "my@my-server.com",
+	// optional, defaults to "localhost"
+	"hello_name": "my-server.com",
+	// optional, default is empty
+	"proxy": {
+		"host": "my-proxy.io",
+		"port": "1080"
+	}
 }
 ```
 
@@ -66,9 +75,26 @@ These are the environment variables used to configure the HTTP server:
 
 ## REST API Documentation
 
-See https://help.reacher.email/rest-api-documentation.
+Read docs on https://help.reacher.email/rest-api-documentation.
 
-Also check the [`openapi.json`](./openapi.json) file for the OpenAPI v3 specification of the backend's API.
+The API basically only exposes one endpoint: `POST /v0/check_email` expecting the following body:
+
+```json
+{
+	"to_email": "someone@gmail.com",
+	// optional, defaults to "user@example.org"
+	"from_email": "my@my-server.com",
+	// optional, defaults to "localhost"
+	"hello_name": "my-server.com",
+	// optional, default is empty
+	"proxy": {
+		"host": "my-proxy.io",
+		"port": "1080"
+	}
+}
+```
+
+Also check [`openapi.json`](./openapi.json) for the complete OpenAPI specification.
 
 ## License
 
