@@ -40,8 +40,8 @@ You can then send a POST request with the following body to `http://localhost:80
 {
 	"to_email": "someone@gmail.com",
 	"from_email": "my@my-server.com", // optional, defaults to "user@example.org"
-	"hello_name": "my-server.com", // optional, defaults to "localhost"
-	"proxy": { // optional, default is empty
+	"hello_name": "my-server.com",    // optional, defaults to "localhost"
+	"proxy": {                        // optional, default is empty
 		"host": "my-proxy.io",
 		"port": "1080"
 	}
@@ -80,8 +80,8 @@ The API basically only exposes one endpoint: `POST /v0/check_email` expecting th
 {
 	"to_email": "someone@gmail.com",
 	"from_email": "my@my-server.com", // optional, defaults to "user@example.org"
-	"hello_name": "my-server.com", // optional, defaults to "localhost"
-	"proxy": { // optional, default is empty
+	"hello_name": "my-server.com",    // optional, defaults to "localhost"
+	"proxy": {                        // optional, default is empty
 		"host": "my-proxy.io",
 		"port": "1080"
 	}
