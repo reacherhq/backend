@@ -36,7 +36,7 @@ docker run -p 8080:8080 reacherhq/backend
 
 You can then send a POST request with the following body to `http://localhost:8080/v0/check_email`:
 
-```json
+```js
 {
 	"to_email": "someone@gmail.com",
 	// optional, defaults to "user@example.org"
@@ -79,7 +79,7 @@ Read docs on https://help.reacher.email/rest-api-documentation.
 
 The API basically only exposes one endpoint: `POST /v0/check_email` expecting the following body:
 
-```json
+```js
 {
 	"to_email": "someone@gmail.com",
 	// optional, defaults to "user@example.org"
