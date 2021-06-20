@@ -15,13 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use reacher_backend::routes::{
-	check_email::{
-		header::{DEFAULT_SAASIFY_SECRET, SAASIFY_SECRET_HEADER},
-		post::EndpointRequest,
-	},
+	check_email::{header::SAASIFY_SECRET_HEADER, post::EndpointRequest},
 	create_routes,
 };
 use serde_json;
+use std::env;
 use warp::http::StatusCode;
 use warp::test::request;
 
@@ -30,6 +28,8 @@ const FOO_BAR_BAZ_RESPONSE: &str = r#"{"input":"foo@bar.baz","is_reachable":"inv
 
 #[tokio::test]
 async fn test_missing_header() {
+	env::set_var("RCH_SAASIFY_SECRET", "foobar");
+
 	let resp = request()
 		.path("/v0/check_email")
 		.method("POST")
@@ -37,7 +37,6 @@ async fn test_missing_header() {
 		.reply(&create_routes())
 		.await;
 
-	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 	assert_eq!(
 		resp.body(),
@@ -47,15 +46,16 @@ async fn test_missing_header() {
 
 #[tokio::test]
 async fn test_wrong_saasify_secret() {
+	env::set_var("RCH_SAASIFY_SECRET", "foobar");
+
 	let resp = request()
 		.path("/v0/check_email")
 		.method("POST")
-		.header(SAASIFY_SECRET_HEADER, "foo")
+		.header(SAASIFY_SECRET_HEADER, "barbaz")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 		.reply(&create_routes())
 		.await;
 
-	println!("{:?}", resp);
 	assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 	assert_eq!(
 		resp.body(),
@@ -65,10 +65,12 @@ async fn test_wrong_saasify_secret() {
 
 #[tokio::test]
 async fn test_input_foo_bar() {
+	env::set_var("RCH_SAASIFY_SECRET", "foobar");
+
 	let resp = request()
 		.path("/v0/check_email")
 		.method("POST")
-		.header(SAASIFY_SECRET_HEADER, DEFAULT_SAASIFY_SECRET)
+		.header(SAASIFY_SECRET_HEADER, "foobar")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar"}"#).unwrap())
 		.reply(&create_routes())
 		.await;
@@ -79,10 +81,12 @@ async fn test_input_foo_bar() {
 
 #[tokio::test]
 async fn test_input_foo_bar_baz() {
+	env::set_var("RCH_SAASIFY_SECRET", "foobar");
+
 	let resp = request()
 		.path("/v0/check_email")
 		.method("POST")
-		.header(SAASIFY_SECRET_HEADER, DEFAULT_SAASIFY_SECRET)
+		.header(SAASIFY_SECRET_HEADER, "foobar")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 		.reply(&create_routes())
 		.await;

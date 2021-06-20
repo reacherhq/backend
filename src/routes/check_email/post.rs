@@ -16,10 +16,7 @@
 
 //! This file implements the `POST /check_email` endpoint.
 
-use super::{
-	header::{check_header, HeaderSecret},
-	known_errors,
-};
+use super::{header::check_header, known_errors};
 use crate::sentry_util;
 use async_recursion::async_recursion;
 use check_if_email_exists::{
@@ -135,10 +132,7 @@ async fn retry(
 }
 
 /// The main `check_email` function that implements the logic of this route.
-async fn check_email(
-	_: HeaderSecret,
-	body: EndpointRequest,
-) -> Result<impl warp::Reply, warp::Rejection> {
+async fn check_email(body: EndpointRequest) -> Result<impl warp::Reply, warp::Rejection> {
 	// Run `ciee_check_email` with retries if necessary. Also measure the
 	// verification time.
 	let now = Instant::now();
