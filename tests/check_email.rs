@@ -81,11 +81,12 @@ async fn test_input_foo_bar() {
 
 #[tokio::test]
 async fn test_input_foo_bar_baz() {
-	env::remove_var("RCH_SAASIFY_SECRET");
+	env::set_var("RCH_SAASIFY_SECRET", "foobar");
 
 	let resp = request()
 		.path("/v0/check_email")
 		.method("POST")
+		.header(SAASIFY_SECRET_HEADER, "foobar")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
 		.reply(&create_routes())
 		.await;
