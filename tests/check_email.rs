@@ -81,6 +81,8 @@ async fn test_input_foo_bar() {
 
 #[tokio::test]
 async fn test_input_foo_bar_baz() {
+	env::remove_var("RCH_SAASIFY_SECRET");
+
 	let resp = request()
 		.path("/v0/check_email")
 		.method("POST")
