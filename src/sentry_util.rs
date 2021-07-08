@@ -17,19 +17,10 @@
 //! Helper functions to send events to Sentry.
 
 use crate::routes::check_email::post::RetryOption;
-use lazy_static::lazy_static;
-use regex::Regex;
 use sentry::protocol::{Event, Level, Value};
 use std::{collections::BTreeMap, env};
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-lazy_static! {
-	// Regex to extract emails from a string.
-	static ref RE: Regex =
-		Regex::new(r"[a-zA-Z0-9._-]+@(?P<domain>[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)")
-			.unwrap();
-}
 
 /// Setup Sentry.
 pub fn setup_sentry() -> sentry::ClientInitGuard {
@@ -76,13 +67,19 @@ pub fn metrics(message: String, retry_option: RetryOption, duration: u128, domai
 }
 
 /// Helper function to send an Error event to Sentry.
-pub fn error(message: String, result: Option<&str>, retry_option: Option<RetryOption>) {
-	let redacted_message = redact(message.as_str());
+pub fn error(
+	message: String,
+	result: Option<&str>,
+	retry_option: Option<RetryOption>,
+	username: &str,
+) {
+	let redacted_message = redact(message.as_str(), username);
 	log::debug!("Sending error to Sentry: {}", redacted_message);
 
 	let mut extra = BTreeMap::new();
 	if let Some(result) = result {
-		extra.insert("CheckEmailOutput".into(), redact(result).into());
+		println!("{}", redact(result, username));
+		extra.insert("CheckEmailOutput".into(), redact(result, username).into());
 	}
 	if let Some(retry_option) = retry_option {
 		extra.insert("retry_option".into(), retry_option.to_string().into());
@@ -98,11 +95,10 @@ pub fn error(message: String, result: Option<&str>, retry_option: Option<RetryOp
 	});
 }
 
-/// Function to parse emails inside a text, and replace them with
-/// `*@domain.com` for privacy reasons.
-fn redact(input: &str) -> String {
-	let result = RE.replace_all(input, "*@$domain");
-	result.into()
+/// Function to replace all usernames from email, and replace them with
+/// `***@domain.com` for privacy reasons.
+fn redact(input: &str, username: &str) -> String {
+	input.replace(username, "***")
 }
 
 #[cfg(test)]
@@ -111,15 +107,22 @@ mod tests {
 
 	#[test]
 	fn test_redact() {
-		assert_eq!("*@gmail.com", redact("someone@gmail.com"));
+		assert_eq!("***@gmail.com", redact("someone@gmail.com", "someone"));
 		assert_eq!(
-			"my email is *@gmail.com.",
-			redact("my email is someone@gmail.com.")
+			"my email is ***@gmail.com.",
+			redact("my email is someone@gmail.com.", "someone")
 		);
 		assert_eq!(
-			"my email is *@gmail.com., I repeat, my email is *@gmail.com.",
-			redact("my email is someone@gmail.com., I repeat, my email is someone@gmail.com.")
+			"my email is ***@gmail.com., I repeat, my email is ***@gmail.com.",
+			redact(
+				"my email is someone@gmail.com., I repeat, my email is someone@gmail.com.",
+				"someone"
+			)
 		);
-		assert_eq!("someone @ gmail . com", redact("someone @ gmail . com"));
+		assert_eq!(
+			"*** @ gmail . com",
+			redact("someone @ gmail . com", "someone")
+		);
+		assert_eq!("*** is here.", redact("someone is here.", "someone"));
 	}
 }

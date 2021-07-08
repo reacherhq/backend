@@ -107,6 +107,7 @@ pub fn log_unknown_errors(result: &CheckEmailOutput, retry_option: RetryOption) 
 				format!("{:?}", error),
 				Some(format!("{:#?}", result).as_ref()),
 				Some(retry_option),
+				result.syntax.username.as_str(),
 			);
 		}
 		(_, Err(error), _) => {
@@ -115,6 +116,7 @@ pub fn log_unknown_errors(result: &CheckEmailOutput, retry_option: RetryOption) 
 				format!("{:?}", error),
 				Some(format!("{:#?}", result).as_ref()),
 				Some(retry_option),
+				result.syntax.username.as_str(),
 			);
 		}
 		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
@@ -141,6 +143,7 @@ pub fn log_unknown_errors(result: &CheckEmailOutput, retry_option: RetryOption) 
 				format!("{:?}", error),
 				Some(format!("{:#?}", result).as_ref()),
 				Some(retry_option),
+				result.syntax.username.as_str(),
 			);
 		}
 		// If everything is ok, we just return the result.
