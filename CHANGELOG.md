@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.10](https://github.com/reacherhq/backend/compare/v0.3.9...v0.3.10) (2021-07-08)
+
+
+### Bug Fixes
+
+* Filter out username when redacting emails ([#209](https://github.com/reacherhq/backend/issues/209)) ([b6fea2f](https://github.com/reacherhq/backend/commit/b6fea2f8454bd95242a55d75d24aa05cc31749d1))
+* Redact emails in Sentry error messages ([#208](https://github.com/reacherhq/backend/issues/208)) ([f73a209](https://github.com/reacherhq/backend/commit/f73a209ec8a7e2c1529702ff263942b2b96d712c))
+
 ### [0.3.9](https://github.com/reacherhq/backend/compare/v0.3.8...v0.3.9) (2021-06-20)
 
 
