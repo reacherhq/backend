@@ -1,6 +1,6 @@
 [package]
 name = "reacher_backend"
-version = "0.3.9"
+version = "0.3.10"
 edition = "2018"
 license = "AGPL-3.0"
 publish = false
@@ -10,9 +10,7 @@ async-recursion = "0.3"
 async-smtp = "0.4"
 check-if-email-exists = "0.8"
 env_logger = "0.8"
-lazy_static = "1.4"
 log = "0.4"
-regex = "1.5"
 sentry = "0.22"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.8", features = ["macros"] }
