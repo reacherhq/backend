@@ -14,16 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use reacher_backend::{routes::create_routes, sentry_util::setup_sentry};
+use reacher_backend::{
+	routes::create_routes,
+	sentry_util::{setup_sentry, CARGO_PKG_VERSION},
+};
 use std::{env, net::IpAddr};
 
 /// Run a HTTP server using warp.
 ///
 /// # Panics
 ///
-/// If at least one of the environment variables:
-/// - RCH_HTTP_HOST
-/// is malformed, then the program will panic.
+/// The program panics if at least one of the environment variables is
+/// malformed:
+/// - RCH_HTTP_HOST,
+/// - PORT.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
@@ -43,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.unwrap_or(8080);
 	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
 
+	log::info!(target: "reacher", "Running Reacher v{}", CARGO_PKG_VERSION);
 	warp::serve(routes).run((host, port)).await;
 	Ok(())
 }

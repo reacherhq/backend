@@ -151,7 +151,8 @@ async fn check_email(body: EndpointRequest) -> Result<impl warp::Reply, warp::Re
 	};
 
 	// Log on Sentry the `is_reachable` field.
-	// FIXME We should definitely log this somehwere else than Sentry.
+	// We should definitely log this somewhere else than Sentry.
+	// TODO https://github.com/reacherhq/backend/issues/207
 	sentry_util::metrics(
 		format!("is_reachable={:?}", value.is_reachable),
 		retry_option,
