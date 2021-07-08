@@ -66,7 +66,8 @@ pub fn metrics(message: String, retry_option: RetryOption, duration: u128, domai
 	});
 }
 
-/// Helper function to send an Error event to Sentry.
+/// Helper function to send an Error event to Sentry. We redact all sensitive
+/// info before sending to Sentry, but removing all instances of `username`.
 pub fn error(
 	message: String,
 	result: Option<&str>,
