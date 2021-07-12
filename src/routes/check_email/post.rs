@@ -78,16 +78,16 @@ async fn create_check_email_future(
 	// Create Request for check_if_email_exists from body
 	let mut input = CheckEmailInput::new(vec![body.to_email]);
 	input
-		.from_email(body.from_email.unwrap_or_else(|| {
+		.set_from_email(body.from_email.unwrap_or_else(|| {
 			env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
 		}))
-		.hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
+		.set_hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
 	if let Some(proxy_input) = body.proxy {
-		input.proxy(proxy_input.host, proxy_input.port);
+		input.set_proxy(proxy_input);
 	}
 
-	input.smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
+	input.set_smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
 
 	// Retry each future twice, to avoid grey-listing.
 	retry(&input, RetryOption::Direct, 2).await
