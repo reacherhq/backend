@@ -9,7 +9,7 @@ publish = false
 async-recursion = "0.3"
 async-smtp = "0.4"
 check-if-email-exists = "0.8"
-env_logger = "0.8"
+env_logger = "0.9"
 log = "0.4"
 sentry = "0.23"
 serde = { version = "1.0", features = ["derive"] }
