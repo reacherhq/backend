@@ -109,7 +109,7 @@ async fn retry(
 		count,
 	);
 
-	let result = ciee_check_email(&input)
+	let result = ciee_check_email(input)
 		.await
 		.pop()
 		.expect("Input contains one email, so does output. qed.");
