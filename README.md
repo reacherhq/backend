@@ -44,7 +44,8 @@ You can then send a POST request with the following body to `http://localhost:80
 	"proxy": {                        // (optional) SOCK5 proxy to run the verification through, default is empty
 		"host": "my-proxy.io",
 		"port": 1080
-	}
+	},
+	"smtp_port": 587                  // (optional) SMTP port to do the email verification, defaults to 25
 }
 ```
 
