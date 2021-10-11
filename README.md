@@ -84,7 +84,8 @@ The API basically only exposes one endpoint: `POST /v0/check_email` expecting th
 	"proxy": {                        // (optional) SOCK5 proxy to run the verification through, default is empty
 		"host": "my-proxy.io",
 		"port": 1080
-	}
+	},
+	"smtp_port": 587                  // (optional) SMTP port to do the email verification, defaults to 25
 }
 ```
 
