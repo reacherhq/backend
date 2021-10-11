@@ -40,6 +40,7 @@ pub struct EndpointRequest {
 	from_email: Option<String>,
 	hello_name: Option<String>,
 	proxy: Option<CheckEmailInputProxy>,
+	smtp_port: Option<u16>,
 	to_email: String,
 }
 
@@ -85,6 +86,10 @@ async fn create_check_email_future(
 
 	if let Some(proxy_input) = body.proxy {
 		input.set_proxy(proxy_input);
+	}
+
+	if let Some(smtp_port) = body.smtp_port {
+		input.set_smtp_port(smtp_port);
 	}
 
 	input.set_smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
