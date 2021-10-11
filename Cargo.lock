@@ -1497,7 +1497,7 @@ dependencies = [
 
 [[package]]
 name = "reacher_backend"
-version = "0.3.11"
+version = "0.3.12"
 dependencies = [
  "async-recursion",
  "async-smtp",
