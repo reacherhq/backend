@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.12](https://github.com/reacherhq/backend/compare/v0.3.11...v0.3.12) (2021-10-11)
+
+
+### Features
+
+* Add `smtp_port` field in request for validation through different port ([#233](https://github.com/reacherhq/backend/issues/233)) ([ea6b3fc](https://github.com/reacherhq/backend/commit/ea6b3fc01d406064d99863ad75b68cea8baa4480))
+
 ### [0.3.11](https://github.com/reacherhq/backend/compare/v0.3.10...v0.3.11) (2021-09-13)
 
 
