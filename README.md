@@ -70,6 +70,7 @@ These are the environment variables used to configure the HTTP server:
 | `PORT`               | No        | The port to bind the HTTP server to, populated by Heroku.                                                         | `8080`             |
 | `RCH_SENTRY_DSN`     | No        | If set, bug reports will be sent to this [Sentry](https://sentry.io) DSN.                                         | not defined        |
 | `RCH_SAASIFY_SECRET` | No        | If set, all requests must have a `x-saasify-proxy-secret` header set, equal to the value of `RCH_SAASIFY_SECRET`. | not defined        |
+| `RUST_LOG`           | No        | One of `trace,debug,warn,error,info`. 💡 PRO TIP: `RUST_LOG=debug` is very handful for debugging purposes.        | not defined                |
 
 ## REST API Documentation
 
