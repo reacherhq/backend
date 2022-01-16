@@ -18,6 +18,8 @@ use reacher_backend::{
 	routes::{create_routes, manage_job::post::example_job},
 	sentry_util::{setup_sentry, CARGO_PKG_VERSION},
 };
+
+use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use sqlxmq::JobRegistry;
 use std::{env, net::IpAddr};
@@ -34,12 +36,16 @@ use std::{env, net::IpAddr};
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 
+	dotenv().expect(".env file with PGPASSWORD variable");
+	let pg_password = env::var("PGPASSWORD").unwrap();
+	let connection_uri = format!("postgres://postgres:{}@localhost/postgres", pg_password);
+
 	// create connection pool with database
 	// connection pool internally the shared db connection
 	// with arc so it can safely be cloned and shared across threads
 	let pool = PgPoolOptions::new()
 		.max_connections(5)
-		.connect("postgres://postgres:additional@localhost/postgres")
+		.connect(connection_uri.as_str())
 		.await?;
 
 	// registry needs to be given list of jobs it can accept
@@ -48,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	// create runner for the message queue associated
 	// with this job registry
-	let _ = registry
+	let registry = registry
 		// Create a job runner using the connection pool.
 		.runner(&pool)
 		// Here is where you can configure the job runner

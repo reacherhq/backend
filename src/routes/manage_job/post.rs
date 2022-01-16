@@ -3,9 +3,7 @@ use crate::routes::check_email::header::check_header;
 use sqlx::{Pool, Postgres};
 use warp::Filter;
 
-use std::{
-	error::Error,
-};
+use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 use sqlxmq::{job, CurrentJob};
