@@ -15,9 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use reacher_backend::{
-	routes::create_routes,
+	routes::{create_routes, manage_job::post::example_job},
 	sentry_util::{setup_sentry, CARGO_PKG_VERSION},
 };
+use sqlx::postgres::PgPoolOptions;
+use sqlxmq::JobRegistry;
 use std::{env, net::IpAddr};
 
 /// Run a HTTP server using warp.
@@ -31,9 +33,35 @@ use std::{env, net::IpAddr};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
+
+	// create connection pool with database
+	// connection pool internally the shared db connection
+	// with arc so it can safely be cloned and shared across threads
+	let pool = PgPoolOptions::new()
+		.max_connections(5)
+		.connect("postgres://postgres:additional@localhost/postgres")
+		.await?;
+
+	// registry needs to be given list of jobs it can accept
+	let mut registry = JobRegistry::new(&[example_job]);
+	registry.set_context("Hello");
+
+	// create runner for the message queue associated
+	// with this job registry
+	let _ = registry
+		// Create a job runner using the connection pool.
+		.runner(&pool)
+		// Here is where you can configure the job runner
+		// Aim to keep 10-20 jobs running at a time.
+		.set_concurrency(10, 20)
+		// Start the job runner in the background.
+		.run()
+		.await?;
+
+	// Setup warp server
 	let _guard = setup_sentry();
 
-	let routes = create_routes();
+	let routes = create_routes(pool);
 
 	let host = env::var("RCH_HTTP_HOST")
 		.unwrap_or_else(|_| "127.0.0.1".into())
