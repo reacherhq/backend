@@ -36,16 +36,15 @@ use std::{env, net::IpAddr};
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 
-	dotenv().expect(".env file with PGPASSWORD variable");
-	let pg_password = env::var("PGPASSWORD").unwrap();
-	let connection_uri = format!("postgres://postgres:{}@localhost/postgres", pg_password);
+	dotenv().expect(".env file with PG_CONN_URI variable");
+	let pg_conn = env::var("PG_CONN_URI").unwrap();
 
 	// create connection pool with database
 	// connection pool internally the shared db connection
 	// with arc so it can safely be cloned and shared across threads
 	let pool = PgPoolOptions::new()
 		.max_connections(5)
-		.connect(connection_uri.as_str())
+		.connect(pg_conn.as_str())
 		.await?;
 
 	// registry needs to be given list of jobs it can accept
