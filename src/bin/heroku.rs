@@ -36,8 +36,8 @@ use std::{env, net::IpAddr};
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	env_logger::init();
 
-	dotenv().expect(".env file with PG_CONN_URI variable");
-	let pg_conn = env::var("PG_CONN_URI").unwrap();
+	dotenv().expect(".env file with DATABASE_URL variable");
+	let pg_conn = env::var("DATABASE_URL").unwrap();
 
 	// create connection pool with database
 	// connection pool internally the shared db connection

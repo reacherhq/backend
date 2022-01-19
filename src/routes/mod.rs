@@ -27,8 +27,9 @@ pub fn create_routes(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	version::get::get_version()
 		.or(check_email::post::post_check_email())
-		.or(manage_job::post::post_check_bulk_email_job(
+		.or(manage_job::post::create_bulk_email_vrfy_job(
 			conn_pool.clone(),
 		))
+		.or(manage_job::get::get_job_status(conn_pool.clone()))
 		.recover(errors::handle_rejection)
 }

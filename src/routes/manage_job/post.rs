@@ -3,15 +3,20 @@ use crate::routes::check_email::header::check_header;
 use sqlx::{Pool, Postgres};
 use warp::Filter;
 
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 
 use serde::{Deserialize, Serialize};
 use sqlxmq::{job, CurrentJob};
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct HelloRequest {
-	name: Option<String>,
+pub struct CreateBulkRequestBody {
+	input_type: String,
+	input: Vec<String>,
+	proxy: Option<HashMap<String, String>>,
+	hello_name: Option<String>,
+	from_email: Option<String>,
+	smtp_port: Option<usize>,
 }
 
 // Arguments to the `#[job]` attribute allow setting default job options.
@@ -36,27 +41,38 @@ pub async fn example_job(
 }
 
 /// The main `check_email` function that implements the logic of this route.
-async fn create_bulk_email_job(
-	_: HelloRequest,
+async fn create_bulk_request(
+	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-	if let Ok(uuid) = example_job.builder().spawn(&conn_pool).await {
-		Ok(warp::reply::with_status(
-			uuid.to_string(),
+	// create job entry
+	let rec = sqlx::query!(
+		r#"
+		INSERT INTO blk_vrfy_job (total_records)
+		VALUES ($1)
+		RETURNING id
+		"#,
+		body.input.len() as i32
+	)
+	.fetch_one(&conn_pool)
+	.await;
+
+	match rec {
+		Ok(rec) => Ok(warp::reply::with_status(
+			rec.id.to_string(),
 			warp::http::StatusCode::CREATED,
-		))
-	} else {
-		Ok(warp::reply::with_status(
+		)),
+		Err(err) => Ok(warp::reply::with_status(
 			"Unable to create job".to_string(),
 			warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-		))
+		)),
 	}
 }
 
 /// Create the `POST /bulk` endpoint.
 /// The endpoint accepts list of email address and creates
 /// a new job to check them.
-pub fn post_check_bulk_email_job(
+pub fn create_bulk_email_vrfy_job(
 	conn_pool: Pool<Postgres>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk")
@@ -67,7 +83,7 @@ pub fn post_check_bulk_email_job(
 		// TODO: Configure max size limit for a bulk job
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
-		.and_then(move |body: HelloRequest| create_bulk_email_job(body, conn_pool.clone()))
+		.and_then(move |body: CreateBulkRequestBody| create_bulk_request(body, conn_pool.clone()))
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }
