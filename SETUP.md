@@ -5,4 +5,5 @@
 3. Download migrations from [sqlxmq](https://github.com/Diggsey/sqlxmq#database-schema) to setup database for message queue. 
 4. Install [psql](https://blog.timescale.com/blog/how-to-install-psql-on-mac-ubuntu-debian-windows/) to apply migrations to db.
 5. Use `cargo install rargs` and run the following to apply migrations - `ls migrations/sqlxmq/*up.sql | rargs psql postgres://postgres:<password>@localhost/postgres -f migrations/{0}`
-6. Add a `.env` file with a single key `PGPASSWORD=<password>`. This will be read by the application at runtime from the environment and be used to connect to the environment.
+6. Add a `.env` file with a single key for the connection string `DATABASE_URL=postgres://postgres:<password>@localhost/postgres`. This will be read by the application at runtime from the environment and be used to connect to the environment. This will also be used by sqlx to verify sql queries at compile time.
+
