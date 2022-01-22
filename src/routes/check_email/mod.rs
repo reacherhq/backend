@@ -15,5 +15,5 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod header;
-mod known_errors;
+pub mod known_errors;
 pub mod post;

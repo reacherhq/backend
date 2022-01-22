@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use reacher_backend::{
-	routes::{create_routes, manage_job::post::example_job},
+	routes::{create_routes, manage_job::post::email_verification_task},
 	sentry_util::{setup_sentry, CARGO_PKG_VERSION},
 };
 
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.await?;
 
 	// registry needs to be given list of jobs it can accept
-	let mut registry = JobRegistry::new(&[example_job]);
+	let mut registry = JobRegistry::new(&[email_verification_task]);
 	registry.set_context("Hello");
 
 	// create runner for the message queue associated

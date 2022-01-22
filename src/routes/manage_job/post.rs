@@ -1,12 +1,34 @@
 //! This file implements the `POST /bulk` endpoint.
-use crate::routes::check_email::header::check_header;
+use crate::routes::check_email::{header::check_header, post::RetryOption};
+use async_recursion::async_recursion;
+use check_if_email_exists::{
+	check_email as ciee_check_email, CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput,
+	Reachable,
+};
 use sqlx::{Pool, Postgres};
 use warp::Filter;
 
 use std::{collections::HashMap, error::Error};
 
+use crate::routes::check_email::known_errors;
 use serde::{Deserialize, Serialize};
 use sqlxmq::{job, CurrentJob};
+
+const EMAIL_TASK_BATCH_SIZE: usize = 5;
+
+/// Errors that can happen during an email verification.
+#[derive(Debug)]
+enum CheckEmailError {
+	/// We get an `is_reachable` Unknown. We consider this internally as an
+	/// error case, so that we can do retry mechanisms (see select_ok & retry).
+	Unknown((CheckEmailOutput, RetryOption)),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TaskInput {
+	job_id: i32,
+	input: CheckEmailInput,
+}
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -19,28 +41,99 @@ pub struct CreateBulkRequestBody {
 	smtp_port: Option<usize>,
 }
 
+/// Endpoint response body.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CreateBulkResponseBody {
+	job_id: i32,
+}
+
+/// Endpoint error response
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ErrorResponseBody {
+	error: String,
+}
+
 // Arguments to the `#[job]` attribute allow setting default job options.
+/// This task tries to verify the given email and inserts the results
+/// into the email verification db table
 #[job(channel_name = "foo")]
-pub async fn example_job(
-	// The first argument should always be the current job.
+pub async fn email_verification_task(
 	mut current_job: CurrentJob,
 	// Additional arguments are optional, but can be used to access context
 	// provided via [`JobRegistry::set_context`].
-	message: &'static str,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-	// Decode a JSON payload
-	let who: Option<String> = current_job.json()?;
+	let task_input: TaskInput = current_job.json()?.unwrap();
 
-	// Do some work
-	println!("{}, {}!", message, who.as_deref().unwrap_or("world"));
+	// Retry each future twice, to avoid grey-listing.
+	if let Ok((response, _)) = retry(&task_input.input, RetryOption::Direct, 2).await {
+		let rec = sqlx::query!(
+			r#"
+			INSERT INTO ema_vrfy_rec (job_id, email_id, result)
+			VALUES ($1, $2, $3)
+			"#,
+			task_input.job_id,
+			response.input,
+			serde_json::json!(response)
+		);
+	} else {
+		log::debug!(
+			target:"reacher",
+			"Failed [email={}] for [job={}]",
+			task_input.job_id,
+			task_input.input.to_emails[0]
+		);
+	}
 
-	// Mark the job as complete
 	current_job.complete().await?;
 
 	Ok(())
 }
 
-/// The main `check_email` function that implements the logic of this route.
+/// Retry the check ciee_check_email function, in particular to avoid
+/// greylisting.
+#[async_recursion]
+async fn retry(
+	input: &CheckEmailInput,
+	retry_option: RetryOption,
+	count: usize,
+) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
+	log::debug!(
+		target:"reacher",
+		"[email={}] Checking with retry option {}, attempt #{}",
+		input.to_emails[0],
+		retry_option,
+		count,
+	);
+
+	let result = ciee_check_email(input)
+		.await
+		.pop()
+		.expect("Input contains one email, so does output. qed.");
+
+	log::debug!(
+		target:"reacher",
+		"[email={}] Got result with retry option {}, attempt #{}, is_reachable={:?}",
+		input.to_emails[0],
+		retry_option,
+		count,
+		result.is_reachable
+	);
+
+	// If we get an unknown error, log it.
+	known_errors::log_unknown_errors(&result, retry_option);
+
+	if result.is_reachable == Reachable::Unknown {
+		if count <= 1 {
+			Err(CheckEmailError::Unknown((result, retry_option)))
+		} else {
+			retry(input, retry_option, count - 1).await
+		}
+	} else {
+		Ok((result, retry_option))
+	}
+}
+
+/// handles input, creates db entry for job and tasks for verification
 async fn create_bulk_request(
 	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
@@ -58,14 +151,30 @@ async fn create_bulk_request(
 	.await;
 
 	match rec {
-		Ok(rec) => Ok(warp::reply::with_status(
-			rec.id.to_string(),
-			warp::http::StatusCode::CREATED,
-		)),
-		Err(err) => Ok(warp::reply::with_status(
-			"Unable to create job".to_string(),
-			warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-		)),
+		Ok(rec) => {
+			for email_id in body.input.into_iter() {
+				// TODO handle other optional parameters in input
+				let input = CheckEmailInput::new(vec![email_id]);
+				let task_input = TaskInput {
+					input,
+					job_id: rec.id,
+				};
+				// TODO handle errors gracefully
+				email_verification_task
+					.builder()
+					.set_json(&task_input)
+					.unwrap()
+					.spawn(&conn_pool)
+					.await
+					.unwrap();
+			}
+			Ok(warp::reply::json(&CreateBulkResponseBody {
+				job_id: rec.id,
+			}))
+		}
+		Err(err) => Ok(warp::reply::json(&ErrorResponseBody {
+			error: "Failed to create job".to_string(),
+		})),
 	}
 }
 
