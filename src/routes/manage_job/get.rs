@@ -4,39 +4,42 @@ use warp::Filter;
 
 use serde::Serialize;
 
+use check_if_email_exists::CheckEmailOutput;
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::types::Uuid;
+use sqlx::types::Json;
 
 #[derive(sqlx::Type, Debug, Serialize)]
 #[sqlx(type_name = "valid_status", rename_all = "lowercase")]
 pub enum ValidStatus {
-	Pending,
 	Running,
 	Completed,
 	Stopped,
 }
 
+/// Job record stores the information about a submitted job
+///
+/// `job_status` field is an update on read field. It's
+/// status will be derived from counting number of
+/// completed email verification tasks. It will be updated
+/// with the most recent status of the job.
 #[derive(sqlx::FromRow, Debug, Serialize)]
 pub struct JobRecord {
 	id: i32,
-	job_uuid: Option<Uuid>,
 	created_at: DateTime<Utc>,
-	attempt_at: DateTime<Utc>,
 	total_records: i32,
-	total_processed: i32,
-	summary_total_safe: i32,
-	summary_total_invalid: i32,
-	summary_total_risky: i32,
-	summary_total_unknown: i32,
 	job_status: ValidStatus,
 }
 
+/// Email record stores the result of a completed email verification task
+///
+/// It related to it's parent job through job_id
+/// It stores the result of a verification as jsonb field
+/// serialized from `CheckEmailOutput`
 #[derive(sqlx::FromRow, Debug)]
 pub struct EmailRecord {
 	job_id: i32,
-	record_id: i32,
-	status: ValidStatus,
 	email_id: String,
+	result: Json<CheckEmailOutput>,
 }
 
 async fn job_status(
@@ -46,10 +49,7 @@ async fn job_status(
 	let rec = sqlx::query_as!(
 		JobRecord,
 		r#"
-		SELECT id, job_uuid, created_at, attempt_at, total_records,
-			   total_processed, summary_total_safe, summary_total_invalid,
-			   summary_total_risky, summary_total_unknown,
-			   job_status as "job_status: _" FROM blk_vrfy_job
+		SELECT id, created_at, total_records, job_status as "job_status: _" FROM blk_vrfy_job
 		WHERE id = $1
 		LIMIT 1
 		"#,
@@ -57,6 +57,9 @@ async fn job_status(
 	)
 	.fetch_one(&conn_pool)
 	.await;
+
+	// TODO get aggregate info from other table
+	// TODO Get and update job status from aggregate info
 
 	match rec {
 		Ok(rec) => Ok(warp::reply::json(&rec)),
