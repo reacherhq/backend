@@ -1,5 +1,8 @@
 //! This file implements the `POST /bulk` endpoint.
-use crate::routes::check_email::{header::check_header, post::RetryOption};
+use crate::{
+	errors::ReacherError,
+	routes::check_email::{header::check_header, post::RetryOption},
+};
 use async_recursion::async_recursion;
 use check_if_email_exists::{
 	check_email as ciee_check_email, CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput,
@@ -14,7 +17,7 @@ use crate::routes::check_email::known_errors;
 use serde::{Deserialize, Serialize};
 use sqlxmq::{job, CurrentJob};
 
-const EMAIL_TASK_BATCH_SIZE: usize = 5;
+const EMAIL_TASK_BATCH_SIZE: usize = 1;
 
 /// Errors that can happen during an email verification.
 #[derive(Debug)]
@@ -31,7 +34,7 @@ pub struct TaskInput {
 }
 
 /// Endpoint request body.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct CreateBulkRequestBody {
 	input_type: String,
 	input: Vec<String>,
@@ -39,6 +42,71 @@ pub struct CreateBulkRequestBody {
 	hello_name: Option<String>,
 	from_email: Option<String>,
 	smtp_port: Option<usize>,
+}
+
+pub struct CreateBulkRequestBodyIterator {
+	body: CreateBulkRequestBody,
+	index: usize,
+	batch_size: usize,
+}
+
+impl IntoIterator for CreateBulkRequestBody {
+	type Item = CreateBulkRequestBody;
+	type IntoIter = CreateBulkRequestBodyIterator;
+
+	fn into_iter(self) -> Self::IntoIter {
+		CreateBulkRequestBodyIterator {
+			body: self,
+			index: 0,
+			batch_size: EMAIL_TASK_BATCH_SIZE,
+		}
+	}
+}
+
+impl Iterator for CreateBulkRequestBodyIterator {
+	type Item = CreateBulkRequestBody;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.index <= self.body.input.len() {
+			Some(CreateBulkRequestBody {
+				input_type: self.body.input_type.clone(),
+				input: self.body.input[self.index..self.index + self.batch_size].to_vec(),
+				proxy: self.body.proxy.clone(),
+				hello_name: self.body.hello_name.clone(),
+				from_email: self.body.from_email.clone(),
+				smtp_port: self.body.smtp_port.clone(),
+			})
+		} else {
+			None
+		}
+	}
+}
+
+impl Into<CheckEmailInput> for CreateBulkRequestBody {
+	fn into(self) -> CheckEmailInput {
+		let mut input = CheckEmailInput::new(self.input);
+
+		if let Some(name) = self.hello_name {
+			input.set_hello_name(name);
+		}
+
+		if let Some(email) = self.from_email {
+			input.set_from_email(email);
+		}
+
+		if let Some(port) = self.smtp_port {
+			input.set_smtp_port(port as u16);
+		}
+
+		if let Some(proxy) = self.proxy {
+			input.set_proxy(CheckEmailInputProxy {
+				host: proxy.get("host").unwrap().clone(),
+				port: proxy.get("port").unwrap().parse().unwrap(),
+			});
+		}
+
+		input
+	}
 }
 
 /// Endpoint response body.
@@ -148,34 +216,35 @@ async fn create_bulk_request(
 		body.input.len() as i32
 	)
 	.fetch_one(&conn_pool)
-	.await;
+	.await
+	.map_err(|e| {
+		log::error!(
+			target:"reacher/v0/bulk/",
+			"Failed to create job record for [body={:?}] with [error={}]",
+			&body,
+			e
+		);
+		ReacherError::from(e)
+	})?;
 
-	match rec {
-		Ok(rec) => {
-			for email_id in body.input.into_iter() {
-				// TODO handle other optional parameters in input
-				let input = CheckEmailInput::new(vec![email_id]);
-				let task_input = TaskInput {
-					input,
-					job_id: rec.id,
-				};
-				// TODO handle errors gracefully
-				email_verification_task
-					.builder()
-					.set_json(&task_input)
-					.unwrap()
-					.spawn(&conn_pool)
-					.await
-					.unwrap();
-			}
-			Ok(warp::reply::json(&CreateBulkResponseBody {
-				job_id: rec.id,
-			}))
-		}
-		Err(err) => Ok(warp::reply::json(&ErrorResponseBody {
-			error: "Failed to create job".to_string(),
-		})),
+	for job in body.into_iter() {
+		let task_input = TaskInput {
+			input: job.into(),
+			job_id: rec.id,
+		};
+		// TODO handle errors gracefully
+		email_verification_task
+			.builder()
+			.set_json(&task_input)
+			.unwrap()
+			.spawn(&conn_pool)
+			.await
+			.unwrap();
 	}
+
+	Ok(warp::reply::json(&CreateBulkResponseBody {
+		job_id: rec.id,
+	}))
 }
 
 /// Create the `POST /bulk` endpoint.
