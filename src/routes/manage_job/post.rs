@@ -68,14 +68,18 @@ impl Iterator for CreateBulkRequestBodyIterator {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.index <= self.body.input.len() {
-			Some(CreateBulkRequestBody {
+			let item = Some(CreateBulkRequestBody {
 				input_type: self.body.input_type.clone(),
 				input: self.body.input[self.index..self.index + self.batch_size].to_vec(),
 				proxy: self.body.proxy.clone(),
 				hello_name: self.body.hello_name.clone(),
 				from_email: self.body.from_email.clone(),
 				smtp_port: self.body.smtp_port.clone(),
-			})
+			});
+
+			self.index = self.index + self.batch_size;
+
+			item
 		} else {
 			None
 		}
