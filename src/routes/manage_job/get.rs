@@ -16,7 +16,6 @@ use sqlx::types::Json;
 pub enum ValidStatus {
 	Running,
 	Completed,
-	Stopped,
 }
 
 impl Default for ValidStatus {
