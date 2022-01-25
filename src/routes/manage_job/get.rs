@@ -74,7 +74,7 @@ async fn job_status(
 	job_id: i32,
 	conn_pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-	let mut job_rec = sqlx::query_as!(
+	let job_rec = sqlx::query_as!(
 		JobRecord,
 		r#"
 		SELECT id, created_at, total_records FROM bulk_jobs
@@ -121,9 +121,9 @@ async fn job_status(
 	})?;
 
 	let job_status = if (agg_info.total_processed.unwrap() as i32) < job_rec.total_records {
-		ValidStatus::Completed
-	} else {
 		ValidStatus::Running
+	} else {
+		ValidStatus::Completed
 	};
 
 	Ok(warp::reply::json(&JobStatusResponseBody {
