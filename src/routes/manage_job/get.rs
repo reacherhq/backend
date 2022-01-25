@@ -5,9 +5,7 @@ use warp::Filter;
 
 use serde::Serialize;
 
-use check_if_email_exists::CheckEmailOutput;
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::types::Json;
 
 /// NOTE: Type conversions from postgres to rust types
 /// are according to the table given by
@@ -35,18 +33,6 @@ pub struct JobRecord {
 	id: i32,
 	created_at: DateTime<Utc>,
 	total_records: i32,
-}
-
-/// Email record stores the result of a completed email verification task
-///
-/// It related to it's parent job through job_id
-/// It stores the result of a verification as jsonb field
-/// serialized from `CheckEmailOutput`
-#[derive(sqlx::FromRow, Debug)]
-pub struct EmailRecord {
-	job_id: i32,
-	email_id: String,
-	result: Json<CheckEmailOutput>,
 }
 
 /// Summary of a bulk verification job status
@@ -136,7 +122,7 @@ async fn job_status(
 			total_invalid: agg_info.invalid_count.unwrap() as i32,
 			total_unknown: agg_info.unknown_count.unwrap() as i32,
 		},
-		job_status
+		job_status,
 	}))
 }
 

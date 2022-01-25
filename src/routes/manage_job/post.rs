@@ -11,7 +11,7 @@ use check_if_email_exists::{
 use sqlx::{Pool, Postgres};
 use warp::Filter;
 
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
 
 use crate::routes::check_email::known_errors;
 use serde::{Deserialize, Serialize};
@@ -99,14 +99,11 @@ impl Into<CheckEmailInput> for CreateBulkRequestBody {
 		}
 
 		if let Some(port) = self.smtp_port {
-			input.set_smtp_port(port as u16);
+			input.set_smtp_port(port);
 		}
 
 		if let Some(proxy) = self.proxy {
-			input.set_proxy(CheckEmailInputProxy {
-				host: proxy.get("host").unwrap().clone(),
-				port: proxy.get("port").unwrap().parse().unwrap(),
-			});
+			input.set_proxy(proxy);
 		}
 
 		input
