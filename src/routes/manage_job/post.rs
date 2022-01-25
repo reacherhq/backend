@@ -140,6 +140,13 @@ pub async fn email_verification_task(
 
 	// Retry each future twice, to avoid grey-listing.
 	if let Ok((response, _)) = retry(&task_input.input, RetryOption::Direct, 2).await {
+		log::debug!(
+			target:"reacher",
+			"Succeeded [email={}] for [job={}]",
+			task_input.job_id,
+			task_input.input.to_emails[0]
+		);
+
 		let rec = sqlx::query!(
 			r#"
 			INSERT INTO email_results (job_id, result)
@@ -147,7 +154,22 @@ pub async fn email_verification_task(
 			"#,
 			task_input.job_id,
 			serde_json::json!(response)
-		);
+		)
+		// TODO: This is a simplified solution and will work when
+		// the task queue and email results tables are in the same
+		// database. Keeping them in separate database will require
+		// some custom logic on the job registry side
+		// https://github.com/Diggsey/sqlxmq/issues/4
+		.fetch_optional(current_job.pool())
+		.await
+		.map_err(|e| {
+			log::debug!(
+				target:"reacher",
+				"Failed to write [email={}] result to db for [job={}]",
+				task_input.job_id,
+				task_input.input.to_emails[0]
+			);
+		});
 	} else {
 		log::debug!(
 			target:"reacher",
