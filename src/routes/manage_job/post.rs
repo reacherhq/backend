@@ -38,7 +38,7 @@ pub struct TaskInput {
 pub struct CreateBulkRequestBody {
 	input_type: String,
 	input: Vec<String>,
-	proxy: Option<HashMap<String, String>>,
+	proxy: Option<CheckEmailInputProxy>,
 	hello_name: Option<String>,
 	from_email: Option<String>,
 	smtp_port: Option<usize>,
