@@ -128,7 +128,6 @@ pub struct ErrorResponseBody {
 // Arguments to the `#[job]` attribute allow setting default job options.
 /// This task tries to verify the given email and inserts the results
 /// into the email verification db table
-#[job(channel_name = "foo")]
 pub async fn email_verification_task(
 	mut current_job: CurrentJob,
 	// Additional arguments are optional, but can be used to access context
