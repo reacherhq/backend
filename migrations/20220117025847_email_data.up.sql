@@ -5,7 +5,7 @@ CREATE TABLE blk_vrfy_job (
     total_records INTEGER NOT NULL,
     job_status VALID_STATUS NOT NULL DEFAULT VALID_STATUS 'running'
 );
-CREATE TABLE ema_vrfy_rec (
+CREATE TABLE email_results (
     job_id INTEGER,
     email_id TEXT,
     result JSONB,
