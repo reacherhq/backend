@@ -34,9 +34,9 @@ use std::{env, net::IpAddr};
 /// - PORT.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-	env_logger::init();
-
 	dotenv().expect(".env file with DATABASE_URL variable");
+
+	env_logger::init();
 	let pg_conn = env::var("DATABASE_URL").unwrap();
 
 	// create connection pool with database

@@ -9,6 +9,9 @@ use check_if_email_exists::CheckEmailOutput;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::types::Json;
 
+/// NOTE: Type conversions from postgres to rust types
+/// are according to the table given by
+/// [sqlx here](https://docs.rs/sqlx/latest/sqlx/postgres/types/index.html)
 #[derive(sqlx::Type, Debug, Serialize, PartialEq, Eq)]
 #[sqlx(type_name = "valid_status", rename_all = "lowercase")]
 pub enum ValidStatus {
