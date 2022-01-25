@@ -119,12 +119,6 @@ pub struct CreateBulkResponseBody {
 	job_id: i32,
 }
 
-/// Endpoint error response
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ErrorResponseBody {
-	error: String,
-}
-
 // Arguments to the `#[job]` attribute allow setting default job options.
 /// This task tries to verify the given email and inserts the results
 /// into the email verification db table
@@ -139,11 +133,10 @@ pub async fn email_verification_task(
 	if let Ok((response, _)) = retry(&task_input.input, RetryOption::Direct, 2).await {
 		let rec = sqlx::query!(
 			r#"
-			INSERT INTO ema_vrfy_rec (job_id, email_id, result)
-			VALUES ($1, $2, $3)
+			INSERT INTO email_results (job_id, result)
+			VALUES ($1, $2)
 			"#,
 			task_input.job_id,
-			response.input,
 			serde_json::json!(response)
 		);
 	} else {
@@ -212,7 +205,7 @@ async fn create_bulk_request(
 	// create job entry
 	let rec = sqlx::query!(
 		r#"
-		INSERT INTO blk_vrfy_job (total_records)
+		INSERT INTO bulk_jobs (total_records)
 		VALUES ($1)
 		RETURNING id
 		"#,

@@ -12,12 +12,17 @@ use sqlx::types::Json;
 /// NOTE: Type conversions from postgres to rust types
 /// are according to the table given by
 /// [sqlx here](https://docs.rs/sqlx/latest/sqlx/postgres/types/index.html)
-#[derive(sqlx::Type, Debug, Serialize, PartialEq, Eq)]
-#[sqlx(type_name = "valid_status", rename_all = "lowercase")]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 pub enum ValidStatus {
 	Running,
 	Completed,
 	Stopped,
+}
+
+impl Default for ValidStatus {
+	fn default() -> Self {
+		ValidStatus::Running
+	}
 }
 
 /// Job record stores the information about a submitted job
@@ -31,7 +36,6 @@ pub struct JobRecord {
 	id: i32,
 	created_at: DateTime<Utc>,
 	total_records: i32,
-	job_status: ValidStatus,
 }
 
 /// Email record stores the result of a completed email verification task
@@ -73,7 +77,7 @@ async fn job_status(
 	let mut job_rec = sqlx::query_as!(
 		JobRecord,
 		r#"
-		SELECT id, created_at, total_records, job_status as "job_status: _" FROM blk_vrfy_job
+		SELECT id, created_at, total_records FROM bulk_jobs
 		WHERE id = $1
 		LIMIT 1
 		"#,
@@ -99,7 +103,7 @@ async fn job_status(
 			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'risky' THEN 1 END) as risky_count,
 			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'invalid' THEN 1 END) as invalid_count,
 			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'unknown' THEN 1 END) as unknown_count
-		FROM ema_vrfy_rec
+		FROM email_results
 		WHERE job_id = $1
 		"#,
 		job_id
@@ -116,42 +120,11 @@ async fn job_status(
 		ReacherError::from(e)
 	})?;
 
-	if job_rec.job_status == ValidStatus::Running {
-		if job_rec.total_records == (agg_info.total_processed.unwrap() as i32) {
-			// update job status to completed
-			sqlx::query_as!(
-				JobRecord,
-				r#"
-				UPDATE blk_vrfy_job
-				SET job_status = $1
-				WHERE id = $2
-				"#,
-				ValidStatus::Completed as ValidStatus,
-				job_id
-			)
-			.fetch_one(&conn_pool)
-			.await
-			.map_or_else(
-				|e| {
-					log::error!(
-						target:"reacher/v0/bulk/",
-						"Failed to update job status to completed for [job_id={}] with [error={}]",
-						job_id,
-						e
-					);
-				},
-				|_| {
-					log::info!(
-						target:"reacher/v0/bulk/",
-						"Update job status to completed for [job_id={}]",
-						job_id,
-					);
-
-					job_rec.job_status = ValidStatus::Completed;
-				},
-			);
-		}
-	}
+	let job_status = if (agg_info.total_processed.unwrap() as i32) < job_rec.total_records {
+		ValidStatus::Completed
+	} else {
+		ValidStatus::Running
+	};
 
 	Ok(warp::reply::json(&JobStatusResponseBody {
 		job_id: job_rec.id,
@@ -164,7 +137,7 @@ async fn job_status(
 			total_invalid: agg_info.invalid_count.unwrap() as i32,
 			total_unknown: agg_info.unknown_count.unwrap() as i32,
 		},
-		job_status: job_rec.job_status,
+		job_status
 	}))
 }
 
