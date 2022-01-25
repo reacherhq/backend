@@ -41,7 +41,7 @@ pub struct CreateBulkRequestBody {
 	proxy: Option<CheckEmailInputProxy>,
 	hello_name: Option<String>,
 	from_email: Option<String>,
-	smtp_port: Option<usize>,
+	smtp_port: Option<u16>,
 }
 
 pub struct CreateBulkRequestBodyIterator {
