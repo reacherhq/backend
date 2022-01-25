@@ -51,7 +51,7 @@ pub struct CreateBulkRequestBodyIterator {
 }
 
 impl IntoIterator for CreateBulkRequestBody {
-	type Item = CreateBulkRequestBody;
+	type Item = CheckEmailInput;
 	type IntoIter = CreateBulkRequestBodyIterator;
 
 	fn into_iter(self) -> Self::IntoIter {
@@ -64,22 +64,32 @@ impl IntoIterator for CreateBulkRequestBody {
 }
 
 impl Iterator for CreateBulkRequestBodyIterator {
-	type Item = CreateBulkRequestBody;
+	type Item = CheckEmailInput;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.index <= self.body.input.len() {
-			let item = Some(CreateBulkRequestBody {
-				input_type: self.body.input_type.clone(),
-				input: self.body.input[self.index..self.index + self.batch_size].to_vec(),
-				proxy: self.body.proxy.clone(),
-				hello_name: self.body.hello_name.clone(),
-				from_email: self.body.from_email.clone(),
-				smtp_port: self.body.smtp_port.clone(),
-			});
+			let to_emails = self.body.input[self.index..self.index + self.batch_size].to_vec();
+			let mut item = CheckEmailInput::new(to_emails);
+
+			if let Some(name) = &self.body.hello_name {
+				item.set_hello_name(name.clone());
+			}
+
+			if let Some(email) = &self.body.from_email {
+				item.set_from_email(email.clone());
+			}
+
+			if let Some(port) = self.body.smtp_port {
+				item.set_smtp_port(port);
+			}
+
+			if let Some(proxy) = &self.body.proxy {
+				item.set_proxy(proxy.clone());
+			}
 
 			self.index = self.index + self.batch_size;
 
-			item
+			Some(item)
 		} else {
 			None
 		}
@@ -221,15 +231,15 @@ async fn create_bulk_request(
 		ReacherError::from(e)
 	})?;
 
-	for job in body.into_iter() {
-		let task_input = TaskInput {
-			input: job.into(),
+	for task_input in body.into_iter() {
+		let task = TaskInput {
+			input: task_input,
 			job_id: rec.id,
 		};
 		// TODO handle errors gracefully
 		email_verification_task
 			.builder()
-			.set_json(&task_input)
+			.set_json(&task)
 			.unwrap()
 			.spawn(&conn_pool)
 			.await
