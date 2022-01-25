@@ -1,5 +1,5 @@
 CREATE TYPE valid_status AS ENUM ('running', 'completed', 'stopped');
-CREATE TABLE blk_vrfy_job (
+CREATE TABLE bulk_jobs (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     total_records INTEGER NOT NULL,
