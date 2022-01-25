@@ -11,7 +11,7 @@ use check_if_email_exists::{
 use sqlx::{Pool, Postgres};
 use warp::Filter;
 
-use std::error::Error;
+use std::{cmp::min, error::Error};
 
 use crate::routes::check_email::known_errors;
 use serde::{Deserialize, Serialize};
@@ -67,8 +67,9 @@ impl Iterator for CreateBulkRequestBodyIterator {
 	type Item = CheckEmailInput;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.index <= self.body.input.len() {
-			let to_emails = self.body.input[self.index..self.index + self.batch_size].to_vec();
+		if self.index < self.body.input.len() {
+			let bounded_index = min(self.index + self.batch_size, self.body.input.len());
+			let to_emails = self.body.input[self.index..bounded_index].to_vec();
 			let mut item = CheckEmailInput::new(to_emails);
 
 			if let Some(name) = &self.body.hello_name {
@@ -87,7 +88,7 @@ impl Iterator for CreateBulkRequestBodyIterator {
 				item.set_proxy(proxy.clone());
 			}
 
-			self.index = self.index + self.batch_size;
+			self.index = self.index + bounded_index;
 
 			Some(item)
 		} else {
