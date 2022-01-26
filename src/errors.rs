@@ -39,3 +39,19 @@ pub async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, 
 		Err(err)
 	}
 }
+
+/// Catch all error struct
+#[derive(Debug)]
+pub enum ReacherError {
+	DbError(sqlx::Error),
+}
+
+// Defaults to Internal server error
+impl reject::Reject for ReacherError {}
+
+// wrap sql errors as db errors for reacher
+impl From<sqlx::Error> for ReacherError {
+	fn from(e: sqlx::Error) -> Self {
+		ReacherError::DbError(e)
+	}
+}

@@ -1,0 +1,112 @@
+{
+  "db": "PostgreSQL",
+  "1a964da4784832e5f631f2c2e727382532c86c7e66e46254d72ef0af03021975": {
+    "query": "\n\t\t\tINSERT INTO email_results (job_id, result)\n\t\t\tVALUES ($1, $2)\n\t\t\t",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Jsonb"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "47af0157fa867e147e49d80b121b1881df93a6619434a1fd1fc9a58315b4044b": {
+    "query": "\n\t\tSELECT id, created_at, total_records FROM bulk_jobs\n\t\tWHERE id = $1\n\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "total_records",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "620f737f4e6e4a5c83514793d8ce66b903ae9b2829f6a933f3b6abcc7f48a3f6": {
+    "query": "\n\t\tSELECT\n\t\t\tCOUNT(*) as total_processed,\n\t\t\tCOUNT(CASE WHEN result ->> 'is_reachable' LIKE 'safe' THEN 1 END) as safe_count,\n\t\t\tCOUNT(CASE WHEN result ->> 'is_reachable' LIKE 'risky' THEN 1 END) as risky_count,\n\t\t\tCOUNT(CASE WHEN result ->> 'is_reachable' LIKE 'invalid' THEN 1 END) as invalid_count,\n\t\t\tCOUNT(CASE WHEN result ->> 'is_reachable' LIKE 'unknown' THEN 1 END) as unknown_count\n\t\tFROM email_results\n\t\tWHERE job_id = $1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "total_processed",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "safe_count",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "risky_count",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "invalid_count",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "unknown_count",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "981f650b6c663feeae8a93e7ecf86326e7a5e6d5c8fd03c03565d86982d0381a": {
+    "query": "\n\t\tINSERT INTO bulk_jobs (total_records)\n\t\tVALUES ($1)\n\t\tRETURNING id\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  }
+}

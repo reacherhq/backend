@@ -62,7 +62,7 @@ impl fmt::Display for RetryOption {
 
 /// Errors that can happen during an email verification.
 #[derive(Debug)]
-enum CheckEmailError {
+pub enum CheckEmailError {
 	/// We get an `is_reachable` Unknown. We consider this internally as an
 	/// error case, so that we can do retry mechanisms (see select_ok & retry).
 	Unknown((CheckEmailOutput, RetryOption)),
@@ -100,8 +100,11 @@ async fn create_check_email_future(
 
 /// Retry the check ciee_check_email function, in particular to avoid
 /// greylisting.
+/// NOTE: This function currently expects only 1 input per task
+/// if the task size in `EMAIL_TASK_BATCH_SIZE` is made greater than 1
+/// this will have to change to handle a list of inputs
 #[async_recursion]
-async fn retry(
+pub async fn retry(
 	input: &CheckEmailInput,
 	retry_option: RetryOption,
 	count: usize,
