@@ -246,7 +246,7 @@ async fn create_bulk_request(
 	.await
 	.map_err(|e| {
 		log::error!(
-			target:"reacher/v0/bulk/",
+			target:"reacher",
 			"Failed to create job record for [body={:?}] with [error={}]",
 			&body,
 			e
