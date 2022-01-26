@@ -127,7 +127,7 @@ pub struct CreateBulkResponseBody {
 	job_id: i32,
 }
 
-// Arguments to the `#[job]` attribute allow setting default job options.
+/// Arguments to the `#[job]` attribute allow setting default job options.
 /// This task tries to verify the given email and inserts the results
 /// into the email verification db table
 #[job]
