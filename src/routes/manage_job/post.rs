@@ -84,7 +84,7 @@ impl Iterator for CreateBulkRequestBodyIterator {
 				item.set_proxy(proxy.clone());
 			}
 
-			self.index = self.index + bounded_index;
+			self.index += bounded_index;
 
 			Some(item)
 		} else {
@@ -121,6 +121,7 @@ pub async fn email_verification_task(
 			task_input.input.to_emails[0]
 		);
 
+		#[allow(unused_variables)]
 		let rec = sqlx::query!(
 			r#"
 			INSERT INTO email_results (job_id, result)

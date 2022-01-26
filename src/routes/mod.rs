@@ -30,6 +30,6 @@ pub fn create_routes(
 		.or(manage_job::post::create_bulk_email_vrfy_job(
 			conn_pool.clone(),
 		))
-		.or(manage_job::get::get_job_status(conn_pool.clone()))
+		.or(manage_job::get::get_job_status(conn_pool))
 		.recover(errors::handle_rejection)
 }

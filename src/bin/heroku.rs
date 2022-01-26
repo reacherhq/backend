@@ -52,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	// create runner for the message queue associated
 	// with this job registry
+	#[allow(unused_variables)]
 	let registry = registry
 		// Create a job runner using the connection pool.
 		.runner(&pool)
