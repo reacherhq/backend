@@ -12,6 +12,8 @@ RUN rm -f target/x86_64-unknown-linux-musl/release/deps/reacher*
 
 COPY . .
 
+ENV SQLX_OFFLINE=true
+
 RUN cargo build --release --target=x86_64-unknown-linux-musl
 
 # ------------------------------------------------------------------------------
