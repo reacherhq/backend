@@ -49,7 +49,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	// registry needs to be given list of jobs it can accept
 	let mut registry = JobRegistry::new(&[email_verification_task]);
-	registry.set_context("Hello");
 
 	// create runner for the message queue associated
 	// with this job registry

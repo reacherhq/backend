@@ -99,7 +99,7 @@ pub struct CreateBulkResponseBody {
 	job_id: i32,
 }
 
-// Arguments to the `#[job]` attribute allow setting default job options.
+/// Arguments to the `#[job]` attribute allow setting default job options.
 /// This task tries to verify the given email and inserts the results
 /// into the email verification db table
 // NOTE: if EMAIL_TASK_BATCH_SIZE is made greater than 1 this logic
@@ -176,7 +176,7 @@ async fn create_bulk_request(
 	.await
 	.map_err(|e| {
 		log::error!(
-			target:"reacher/v0/bulk/",
+			target:"reacher",
 			"Failed to create job record for [body={:?}] with [error={}]",
 			&body,
 			e
