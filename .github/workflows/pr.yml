@@ -10,6 +10,11 @@ on:
     branches:
       - master
 
+# run builds and tests without sqlx's compile time query checks
+# https://github.com/launchbadge/sqlx/blob/master/sqlx-cli/README.md#force-building-in-offline-mode
+env:
+  SQLX_OFFLINE: true
+
 jobs:
   # Cargo check.
   check:

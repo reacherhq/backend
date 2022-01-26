@@ -121,7 +121,7 @@ pub async fn email_verification_task(
 			task_input.input.to_emails[0]
 		);
 
-		let _rec = sqlx::query!(
+		let rec = sqlx::query!(
 			r#"
 			INSERT INTO email_results (job_id, result)
 			VALUES ($1, $2)
@@ -204,7 +204,7 @@ async fn create_bulk_request(
 					e
 				);
 
-				e.into()
+				ReacherError::from(e)
 			})?;
 
 		log::debug!(
