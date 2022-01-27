@@ -15,12 +15,6 @@ pub enum ValidStatus {
 	Completed,
 }
 
-impl Default for ValidStatus {
-	fn default() -> Self {
-		ValidStatus::Running
-	}
-}
-
 /// Job record stores the information about a submitted job
 ///
 /// `job_status` field is an update on read field. It's

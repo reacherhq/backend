@@ -18,14 +18,14 @@ use sqlxmq::{job, CurrentJob};
 const EMAIL_TASK_BATCH_SIZE: usize = 1;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct TaskInput {
+struct TaskInput {
 	job_id: i32,
 	input: CheckEmailInput,
 }
 
 /// Endpoint request body.
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
-pub struct CreateBulkRequestBody {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct CreateBulkRequestBody {
 	input_type: String,
 	input: Vec<String>,
 	proxy: Option<CheckEmailInputProxy>,
@@ -34,7 +34,7 @@ pub struct CreateBulkRequestBody {
 	smtp_port: Option<u16>,
 }
 
-pub struct CreateBulkRequestBodyIterator {
+struct CreateBulkRequestBodyIterator {
 	body: CreateBulkRequestBody,
 	index: usize,
 	batch_size: usize,
@@ -91,7 +91,7 @@ impl Iterator for CreateBulkRequestBodyIterator {
 
 /// Endpoint response body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CreateBulkResponseBody {
+struct CreateBulkResponseBody {
 	job_id: i32,
 }
 

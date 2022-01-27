@@ -17,43 +17,19 @@
 //! This file implements the `POST /check_email` endpoint.
 
 use crate::check::check_email;
-use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput};
+use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy};
 use serde::{Deserialize, Serialize};
-use std::{env, fmt};
+use std::env;
 use warp::Filter;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EndpointRequest {
+struct EndpointRequest {
 	from_email: Option<String>,
 	hello_name: Option<String>,
 	proxy: Option<CheckEmailInputProxy>,
 	smtp_port: Option<u16>,
 	to_email: String,
-}
-
-/// This option represents how we should execute the SMTP connection to check
-/// an email.
-/// For now, we only support directly connecting to the SMTP server, but in the
-/// future, we might try proxying.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum RetryOption {
-	/// Heroku connects to the SMTP server directly.
-	Direct,
-}
-
-impl fmt::Display for RetryOption {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{:?}", self)
-	}
-}
-
-/// Errors that can happen during an email verification.
-#[derive(Debug)]
-pub enum CheckEmailError {
-	/// We get an `is_reachable` Unknown. We consider this internally as an
-	/// error case, so that we can do retry mechanisms (see select_ok & retry).
-	Unknown((CheckEmailOutput, RetryOption)),
 }
 
 impl Into<CheckEmailInput> for EndpointRequest {
