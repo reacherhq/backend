@@ -155,7 +155,6 @@ pub async fn email_verification_task(
 			task_input.input.to_emails[0],
 			task_input.job_id,
 		);
-
 	} else {
 		log::debug!(
 			target:"reacher",
