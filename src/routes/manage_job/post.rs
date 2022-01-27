@@ -84,7 +84,7 @@ impl Iterator for CreateBulkRequestBodyIterator {
 				item.set_proxy(proxy.clone());
 			}
 
-			self.index += bounded_index;
+			self.index = bounded_index;
 
 			Some(item)
 		} else {
@@ -135,16 +135,27 @@ pub async fn email_verification_task(
 		// database. Keeping them in separate database will require
 		// some custom logic on the job registry side
 		// https://github.com/Diggsey/sqlxmq/issues/4
-		.fetch_one(current_job.pool())
+		.fetch_optional(current_job.pool())
 		.await
-		.map_err(|_e| {
+		.map_err(|e| {
 			log::error!(
 				target:"reacher",
-				"Failed to write [email={}] result to db for [job={}]",
+				"Failed to write [email={}] result to db for [job={}] with [error={}]",
+				task_input.input.to_emails[0],
 				task_input.job_id,
-				task_input.input.to_emails[0]
+				e
 			);
-		});
+
+			e
+		})?;
+
+		log::debug!(
+			target:"reacher",
+			"Wrote result for [email={}] for [job={}]",
+			task_input.input.to_emails[0],
+			task_input.job_id,
+		);
+
 	} else {
 		log::debug!(
 			target:"reacher",
