@@ -1,23 +1,17 @@
 //! This file implements the `POST /bulk` endpoint.
-use crate::{
-	errors::ReacherError,
-	routes::check_email::{
-		header::check_header,
-		post::{retry, RetryOption},
-	},
-};
+use crate::check::{check_email, SMTP_TIMEOUT};
+use crate::errors::ReacherError;
 use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy};
 use sqlx::{Pool, Postgres};
+use std::{cmp::min, error::Error, time::Duration};
 use warp::Filter;
-
-use std::{cmp::min, error::Error};
 
 use serde::{Deserialize, Serialize};
 use sqlxmq::{job, CurrentJob};
 
 // this configures the number of emails passed to every task
 // this can be configured but will require changes in the
-// in the `retry` function which assumes a task can have
+// in the `crate::check::check_email` function which assumes a task can have
 // only one email. This will also require changing the
 // email_verification_task itself to handle multiple
 // outputs and commit them to the database.
@@ -84,6 +78,8 @@ impl Iterator for CreateBulkRequestBodyIterator {
 				item.set_proxy(proxy.clone());
 			}
 
+			item.set_smtp_timeout(Duration::from_secs(SMTP_TIMEOUT));
+
 			self.index = bounded_index;
 
 			Some(item)
@@ -103,7 +99,7 @@ pub struct CreateBulkResponseBody {
 /// This task tries to verify the given email and inserts the results
 /// into the email verification db table
 // NOTE: if EMAIL_TASK_BATCH_SIZE is made greater than 1 this logic
-// will have to be changed to handle a vector outputs from `retry`
+// will have to be changed to handle a vector outputs from `check_email`.
 #[job]
 pub async fn email_verification_task(
 	mut current_job: CurrentJob,
@@ -112,57 +108,61 @@ pub async fn email_verification_task(
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 	let task_input: TaskInput = current_job.json()?.unwrap();
 
-	// Retry each future twice, to avoid grey-listing.
-	if let Ok((response, _)) = retry(&task_input.input, RetryOption::Direct, 2).await {
-		log::debug!(
-			target:"reacher",
-			"Succeeded [email={}] for [job={}]",
-			task_input.job_id,
-			task_input.input.to_emails[0]
-		);
+	log::debug!(
+		target:"reacher",
+		"Starting task [email={}] for [job_id={}] and [uuid={}]",
+		task_input.input.to_emails[0],
+		task_input.job_id,
+		current_job.id(),
+	);
 
-		#[allow(unused_variables)]
-		let rec = sqlx::query!(
-			r#"
+	let response = check_email(&task_input.input).await;
+
+	log::debug!(
+		target:"reacher",
+		"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
+		task_input.input.to_emails[0],
+		task_input.job_id,
+		current_job.id(),
+		response.is_reachable,
+	);
+
+	#[allow(unused_variables)]
+	let rec = sqlx::query!(
+		r#"
 			INSERT INTO email_results (job_id, result)
 			VALUES ($1, $2)
 			"#,
-			task_input.job_id,
-			serde_json::json!(response)
-		)
-		// TODO: This is a simplified solution and will work when
-		// the task queue and email results tables are in the same
-		// database. Keeping them in separate database will require
-		// some custom logic on the job registry side
-		// https://github.com/Diggsey/sqlxmq/issues/4
-		.fetch_optional(current_job.pool())
-		.await
-		.map_err(|e| {
-			log::error!(
-				target:"reacher",
-				"Failed to write [email={}] result to db for [job={}] with [error={}]",
-				task_input.input.to_emails[0],
-				task_input.job_id,
-				e
-			);
-
-			e
-		})?;
-
-		log::debug!(
+		task_input.job_id,
+		serde_json::json!(response)
+	)
+	// TODO: This is a simplified solution and will work when
+	// the task queue and email results tables are in the same
+	// database. Keeping them in separate database will require
+	// some custom logic on the job registry side
+	// https://github.com/Diggsey/sqlxmq/issues/4
+	.fetch_optional(current_job.pool())
+	.await
+	.map_err(|e| {
+		log::error!(
 			target:"reacher",
-			"Wrote result for [email={}] for [job={}]",
+			"Failed to write [email={}] result to db for [job_id={}] and [uuid={}] with [error={}]",
 			task_input.input.to_emails[0],
 			task_input.job_id,
+			current_job.id(),
+			e
 		);
-	} else {
-		log::debug!(
-			target:"reacher",
-			"Failed [email={}] for [job={}]",
-			task_input.job_id,
-			task_input.input.to_emails[0]
-		);
-	}
+
+		e
+	})?;
+
+	log::debug!(
+		target:"reacher",
+		"Wrote result for [email={}] for [job_id={}] and [uuid={}]",
+		task_input.input.to_emails[0],
+		task_input.job_id,
+		current_job.id(),
+	);
 
 	current_job.complete().await?;
 
@@ -174,7 +174,7 @@ async fn create_bulk_request(
 	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-	// create job entr>y
+	// create job entry
 	let rec = sqlx::query!(
 		r#"
 		INSERT INTO bulk_jobs (total_records)
@@ -220,7 +220,7 @@ async fn create_bulk_request(
 
 		log::debug!(
 			target:"reacher",
-			"Submitted task for [job={}] with [uuid={}]",
+			"Submitted task to sqlxmq for [job={}] with [uuid={}]",
 			rec.id,
 			task_uuid
 		);
@@ -239,7 +239,6 @@ pub fn create_bulk_email_vrfy_job(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk")
 		.and(warp::post())
-		.and(check_header())
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		// TODO: Configure max size limit for a bulk job

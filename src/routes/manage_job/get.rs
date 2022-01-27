@@ -1,5 +1,4 @@
 use crate::errors::ReacherError;
-use crate::routes::check_email::header::check_header;
 use sqlx::{Pool, Postgres};
 use warp::Filter;
 
@@ -131,7 +130,6 @@ pub fn get_job_status(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk" / i32)
 		.and(warp::get())
-		.and(check_header())
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		// TODO: Configure max size limit for a bulk job

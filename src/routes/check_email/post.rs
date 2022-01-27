@@ -16,23 +16,11 @@
 
 //! This file implements the `POST /check_email` endpoint.
 
-use super::{header::check_header, known_errors};
-use crate::sentry_util;
-use async_recursion::async_recursion;
-use check_if_email_exists::{
-	check_email as ciee_check_email, CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput,
-	Reachable,
-};
+use crate::check::check_email;
+use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput};
 use serde::{Deserialize, Serialize};
-use std::{
-	env, fmt,
-	time::{Duration, Instant},
-};
+use std::{env, fmt};
 use warp::Filter;
-
-/// Timeout after which we drop the `check-if-email-exists` check. We run the
-/// checks twice (to avoid greylisting), so each verification takes 20s max.
-const SMTP_THRESHOLD: u64 = 10;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -68,107 +56,32 @@ pub enum CheckEmailError {
 	Unknown((CheckEmailOutput, RetryOption)),
 }
 
-/// Converts an endpoint request body into a future that performs email
-/// verification.
-async fn create_check_email_future(
-	body: &EndpointRequest,
-) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
-	// FIXME Can we not clone?
-	let body = body.clone();
+impl Into<CheckEmailInput> for EndpointRequest {
+	fn into(self) -> CheckEmailInput {
+		// Create Request for check_if_email_exists from body
+		let mut input = CheckEmailInput::new(vec![self.to_email]);
+		input
+			.set_from_email(self.from_email.unwrap_or_else(|| {
+				env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
+			}))
+			.set_hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
-	// Create Request for check_if_email_exists from body
-	let mut input = CheckEmailInput::new(vec![body.to_email]);
-	input
-		.set_from_email(body.from_email.unwrap_or_else(|| {
-			env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
-		}))
-		.set_hello_name(body.hello_name.unwrap_or_else(|| "gmail.com".into()));
-
-	if let Some(proxy_input) = body.proxy {
-		input.set_proxy(proxy_input);
-	}
-
-	if let Some(smtp_port) = body.smtp_port {
-		input.set_smtp_port(smtp_port);
-	}
-
-	input.set_smtp_timeout(Duration::from_secs(SMTP_THRESHOLD));
-
-	// Retry each future twice, to avoid grey-listing.
-	retry(&input, RetryOption::Direct, 2).await
-}
-
-/// Retry the check ciee_check_email function, in particular to avoid
-/// greylisting.
-/// NOTE: This function currently expects only 1 input per task
-/// if the task size in `EMAIL_TASK_BATCH_SIZE` is made greater than 1
-/// this will have to change to handle a list of inputs
-#[async_recursion]
-pub async fn retry(
-	input: &CheckEmailInput,
-	retry_option: RetryOption,
-	count: usize,
-) -> Result<(CheckEmailOutput, RetryOption), CheckEmailError> {
-	log::debug!(
-		target:"reacher",
-		"[email={}] Checking with retry option {}, attempt #{}",
-		input.to_emails[0],
-		retry_option,
-		count,
-	);
-
-	let result = ciee_check_email(input)
-		.await
-		.pop()
-		.expect("Input contains one email, so does output. qed.");
-
-	log::debug!(
-		target:"reacher",
-		"[email={}] Got result with retry option {}, attempt #{}, is_reachable={:?}",
-		input.to_emails[0],
-		retry_option,
-		count,
-		result.is_reachable
-	);
-
-	// If we get an unknown error, log it.
-	known_errors::log_unknown_errors(&result, retry_option);
-
-	if result.is_reachable == Reachable::Unknown {
-		if count <= 1 {
-			Err(CheckEmailError::Unknown((result, retry_option)))
-		} else {
-			retry(input, retry_option, count - 1).await
+		if let Some(proxy_input) = self.proxy {
+			input.set_proxy(proxy_input);
 		}
-	} else {
-		Ok((result, retry_option))
+
+		if let Some(smtp_port) = self.smtp_port {
+			input.set_smtp_port(smtp_port);
+		}
+
+		input
 	}
 }
 
-/// The main `check_email` function that implements the logic of this route.
-async fn check_email(body: EndpointRequest) -> Result<impl warp::Reply, warp::Rejection> {
-	// Run `ciee_check_email` with retries if necessary. Also measure the
-	// verification time.
-	let now = Instant::now();
-
+/// The main endpoint handler that implements the logic of this route.
+async fn handler(body: EndpointRequest) -> Result<impl warp::Reply, warp::Rejection> {
 	// Run the future to check an email.
-	let (value, retry_option) = match create_check_email_future(&body).await {
-		Ok((value, retry_option)) | Err(CheckEmailError::Unknown((value, retry_option))) => {
-			(value, retry_option)
-		}
-	};
-
-	// Log on Sentry the `is_reachable` field.
-	// We should definitely log this somewhere else than Sentry.
-	// TODO https://github.com/reacherhq/backend/issues/207
-	sentry_util::metrics(
-		format!("is_reachable={:?}", value.is_reachable),
-		retry_option,
-		now.elapsed().as_millis(),
-		value.syntax.domain.as_ref(),
-	);
-
-	Ok(warp::reply::json(&value))
+	Ok(warp::reply::json(&check_email(&body.into()).await))
 }
 
 /// Create the `POST /check_email` endpoint.
@@ -176,12 +89,11 @@ pub fn post_check_email() -> impl Filter<Extract = impl warp::Reply, Error = war
 {
 	warp::path!("v0" / "check_email")
 		.and(warp::post())
-		.and(check_header())
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
-		.and_then(check_email)
+		.and_then(handler)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }
