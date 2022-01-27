@@ -32,21 +32,21 @@ struct EndpointRequest {
 	to_email: String,
 }
 
-impl Into<CheckEmailInput> for EndpointRequest {
-	fn into(self) -> CheckEmailInput {
+impl From<EndpointRequest> for CheckEmailInput {
+	fn from(req: EndpointRequest) -> Self {
 		// Create Request for check_if_email_exists from body
-		let mut input = CheckEmailInput::new(vec![self.to_email]);
+		let mut input = CheckEmailInput::new(vec![req.to_email]);
 		input
-			.set_from_email(self.from_email.unwrap_or_else(|| {
+			.set_from_email(req.from_email.unwrap_or_else(|| {
 				env::var("RCH_FROM_EMAIL").unwrap_or_else(|_| "user@example.org".into())
 			}))
-			.set_hello_name(self.hello_name.unwrap_or_else(|| "gmail.com".into()));
+			.set_hello_name(req.hello_name.unwrap_or_else(|| "gmail.com".into()));
 
-		if let Some(proxy_input) = self.proxy {
+		if let Some(proxy_input) = req.proxy {
 			input.set_proxy(proxy_input);
 		}
 
-		if let Some(smtp_port) = self.smtp_port {
+		if let Some(smtp_port) = req.smtp_port {
 			input.set_smtp_port(smtp_port);
 		}
 
