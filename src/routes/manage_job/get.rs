@@ -15,8 +15,8 @@ enum JobResultResponseFormat {
 #[derive(Serialize, Deserialize)]
 struct JobResultRequest {
 	format: JobResultResponseFormat,
-	limit: i64,
-	offset: i64,
+	limit: u64,
+	offset: u64,
 }
 
 /// NOTE: Type conversions from postgres to rust types
@@ -74,8 +74,8 @@ async fn job_result(
 		LIMIT $2 OFFSET $3
 		"#,
 		job_id,
-		req.limit,
-		req.offset
+		req.limit as i64,
+		req.offset as i64
 	);
 
 	let rows: Vec<serde_json::Value> = conn_pool
@@ -94,10 +94,7 @@ async fn job_result(
 			ReacherError::from(e)
 		})?
 		.iter()
-		.flat_map(|row| {
-			row.column("result")
-				.serialize(serde_json::value::Serializer)
-		})
+		.map(|row| row.get("result"))
 		.collect();
 
 	Ok(warp::reply::json(&rows))
