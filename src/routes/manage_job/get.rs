@@ -1,10 +1,23 @@
 use crate::errors::ReacherError;
-use sqlx::{Pool, Postgres};
+use sqlx::{Executor, Pool, Postgres, Row};
 use warp::Filter;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use sqlx::types::chrono::{DateTime, Utc};
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum JobResultResponseFormat {
+	Json,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JobResultRequest {
+	format: JobResultResponseFormat,
+	limit: i64,
+	offset: i64,
+}
 
 /// NOTE: Type conversions from postgres to rust types
 /// are according to the table given by
@@ -46,6 +59,48 @@ pub struct JobStatusResponseBody {
 	total_processed: i32,
 	summary: JobStatusSummaryResponseBody,
 	job_status: ValidStatus,
+}
+
+async fn job_result(
+	job_id: i32,
+	req: JobResultRequest,
+	conn_pool: Pool<Postgres>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+	let query = sqlx::query!(
+		r#"
+		SELECT result FROM email_results
+		WHERE job_id = $1
+		ORDER BY id
+		LIMIT $2 OFFSET $3
+		"#,
+		job_id,
+		req.limit,
+		req.offset
+	);
+
+	let rows: Vec<serde_json::Value> = conn_pool
+		.fetch_all(query)
+		.await
+		.map_err(|e| {
+			log::error!(
+				target:"reacher",
+				"Failed to get results for [job_id={}] [limit={}] [offset={}] with [error={}]",
+				job_id,
+				req.limit,
+				req.offset,
+				e
+			);
+
+			ReacherError::from(e)
+		})?
+		.iter()
+		.flat_map(|row| {
+			row.column("result")
+				.serialize(serde_json::value::Serializer)
+		})
+		.collect();
+
+	Ok(warp::reply::json(&rows))
 }
 
 async fn job_status(
@@ -124,10 +179,18 @@ pub fn get_job_status(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk" / i32)
 		.and(warp::get())
-		// When accepting a body, we want a JSON body (and to reject huge
-		// payloads)...
-		// TODO: Configure max size limit for a bulk job
 		.and_then(move |job_id| job_status(job_id, conn_pool.clone()))
+		// View access logs by setting `RUST_LOG=reacher`.
+		.with(warp::log("reacher"))
+}
+
+pub fn get_job_result(
+	conn_pool: Pool<Postgres>,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	warp::path!("v0" / "bulk" / i32 / "download")
+		.and(warp::get())
+		.and(warp::query::<JobResultRequest>())
+		.and_then(move |job_id, req| job_result(job_id, req, conn_pool.clone()))
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

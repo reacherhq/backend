@@ -1,5 +1,27 @@
 {
   "db": "PostgreSQL",
+  "1039a6d3d732a86b9b3b2e19e6c8e3c857125d1c4cf916ac32789bfd0176b6b5": {
+    "query": "\n\t\tSELECT result FROM email_results\n\t\tWHERE job_id = $1\n\t\tORDER BY id\n\t\tLIMIT $2 OFFSET $3\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "result",
+          "type_info": "Jsonb"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
   "1a964da4784832e5f631f2c2e727382532c86c7e66e46254d72ef0af03021975": {
     "query": "\n\t\t\tINSERT INTO email_results (job_id, result)\n\t\t\tVALUES ($1, $2)\n\t\t\t",
     "describe": {
