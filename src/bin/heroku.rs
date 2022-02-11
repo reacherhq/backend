@@ -34,6 +34,8 @@ use std::{env, net::IpAddr};
 /// - PORT.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+	log::info!(target: "reacher", "Running Reacher v{}", CARGO_PKG_VERSION);
+
 	// Read from .env file if present.
 	let _ = dotenv();
 
@@ -81,7 +83,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.unwrap_or(8080);
 	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
 
-	log::info!(target: "reacher", "Running Reacher v{}", CARGO_PKG_VERSION);
 	warp::serve(routes).run((host, port)).await;
 	Ok(())
 }
