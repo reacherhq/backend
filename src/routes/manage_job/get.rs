@@ -12,11 +12,19 @@ enum JobResultResponseFormat {
 	Json,
 }
 
+// limit and offset are optional in the request
+// if they are unspecified their default values
+// are 50 and 0 respectively
 #[derive(Serialize, Deserialize)]
 struct JobResultRequest {
 	format: JobResultResponseFormat,
-	limit: u64,
-	offset: u64,
+	limit: Option<u64>,
+	offset: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JobResultJsonResponse {
+	results: Vec<serde_json::Value>,
 }
 
 /// NOTE: Type conversions from postgres to rust types
@@ -66,6 +74,9 @@ async fn job_result(
 	req: JobResultRequest,
 	conn_pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+	let limit = req.limit.unwrap_or(50);
+	let offset = req.offset.unwrap_or(0);
+
 	let query = sqlx::query!(
 		r#"
 		SELECT result FROM email_results
@@ -74,8 +85,8 @@ async fn job_result(
 		LIMIT $2 OFFSET $3
 		"#,
 		job_id,
-		req.limit as i64,
-		req.offset as i64
+		limit as i64,
+		offset as i64
 	);
 
 	let rows: Vec<serde_json::Value> = conn_pool
@@ -86,8 +97,8 @@ async fn job_result(
 				target:"reacher",
 				"Failed to get results for [job_id={}] [limit={}] [offset={}] with [error={}]",
 				job_id,
-				req.limit,
-				req.offset,
+				limit,
+				offset,
 				e
 			);
 
@@ -97,7 +108,7 @@ async fn job_result(
 		.map(|row| row.get("result"))
 		.collect();
 
-	Ok(warp::reply::json(&rows))
+	Ok(warp::reply::json(&JobResultJsonResponse { results: rows }))
 }
 
 async fn job_status(
