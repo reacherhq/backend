@@ -80,7 +80,6 @@ pub fn error(message: String, result: Option<&str>, username: &str) {
 
 	let mut extra = BTreeMap::new();
 	if let Some(result) = result {
-		println!("{}", redact(result, username));
 		extra.insert("CheckEmailOutput".into(), redact(result, username).into());
 	}
 
@@ -194,20 +193,35 @@ pub fn log_unknown_errors(result: &CheckEmailOutput) {
 				result.syntax.username.as_str(),
 			);
 		}
-		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
+		(_, _, Err(SmtpError::HeloError(AsyncSmtpError::Permanent(response))))
+		| (_, _, Err(SmtpError::ConnectError(AsyncSmtpError::Permanent(response))))
+		| (_, _, Err(SmtpError::ConnectWithStreamError(AsyncSmtpError::Permanent(response))))
+		| (_, _, Err(SmtpError::MailFromError(AsyncSmtpError::Permanent(response))))
+		| (_, _, Err(SmtpError::RcptToError(AsyncSmtpError::Permanent(response))))
+		| (_, _, Err(SmtpError::CloseError(AsyncSmtpError::Permanent(response))))
 			if has_smtp_permanent_errors(&response.message) =>
 		{
 			log::debug!(target: "reacher", "Permanent error: {}", response.message[0]);
 		}
-		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
+		(_, _, Err(SmtpError::HeloError(AsyncSmtpError::Transient(response))))
+		| (_, _, Err(SmtpError::ConnectError(AsyncSmtpError::Transient(response))))
+		| (_, _, Err(SmtpError::ConnectWithStreamError(AsyncSmtpError::Transient(response))))
+		| (_, _, Err(SmtpError::MailFromError(AsyncSmtpError::Transient(response))))
+		| (_, _, Err(SmtpError::RcptToError(AsyncSmtpError::Transient(response))))
+		| (_, _, Err(SmtpError::CloseError(AsyncSmtpError::Transient(response))))
 			if has_smtp_transient_errors(&response.message) =>
 		{
 			log::debug!(target: "reacher", "Transient error: {}", response.message[0]);
 		}
-		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Io(error))))
-			if has_smtp_io_errors(error) =>
+		(_, _, Err(SmtpError::HeloError(AsyncSmtpError::Io(err))))
+		| (_, _, Err(SmtpError::ConnectError(AsyncSmtpError::Io(err))))
+		| (_, _, Err(SmtpError::ConnectWithStreamError(AsyncSmtpError::Io(err))))
+		| (_, _, Err(SmtpError::MailFromError(AsyncSmtpError::Io(err))))
+		| (_, _, Err(SmtpError::RcptToError(AsyncSmtpError::Io(err))))
+		| (_, _, Err(SmtpError::CloseError(AsyncSmtpError::Io(err))))
+			if has_smtp_io_errors(err) =>
 		{
-			log::debug!(target: "reacher", "Io error: {}", error);
+			log::debug!(target: "reacher", "Io error: {}", err);
 		}
 		(_, _, Err(error)) => {
 			// If it's a SMTP error we didn't catch above, we log to

@@ -20,7 +20,7 @@ There are 3 ways you can run this backend.
 
 ### 1. One-Click Deploy to Heroku
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend/tree/v0.3.12)
 
 After clicking on the button, just follow the instructions on screen.
 

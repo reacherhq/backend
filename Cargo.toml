@@ -7,12 +7,12 @@ publish = false
 
 [dependencies]
 async-smtp = "0.4"
-check-if-email-exists = "0.8.26"
+check-if-email-exists = "0.8.28"
 env_logger = "0.9"
 log = "0.4"
 sentry = "0.23"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.15", features = ["macros"] }
+tokio = { version = "1.16", features = ["macros"] }
 warp = "0.3"
 openssl = { version = "0.10.38", features = ["vendored"] }
 sqlxmq = "0.3.4"
