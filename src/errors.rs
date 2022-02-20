@@ -45,7 +45,7 @@ pub async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, 
 pub enum ReacherError {
 	DbError(sqlx::Error),
 	CsvError(),
-	JsonError()
+	JsonError(),
 }
 
 // Defaults to Internal server error
