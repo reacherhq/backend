@@ -1,16 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 
 use crate::errors::ReacherError;
-use check_if_email_exists::CheckEmailOutput;
-use csv::{Writer, WriterBuilder};
+
+use csv::WriterBuilder;
 use sqlx::{Executor, Pool, Postgres, Row};
 use warp::Filter;
 
-use serde::{
-	de::{self, MapAccess, Visitor},
-	ser::SerializeSeq,
-	Deserialize, Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use sqlx::types::chrono::{DateTime, Utc};
 
@@ -269,7 +265,7 @@ async fn job_result(
 						e
 					);
 
-					ReacherError::JsonError()
+					ReacherError::Json()
 				})?;
 
 			Ok(warp::reply::with_header(
@@ -310,7 +306,9 @@ async fn job_result_csv(
 		offset as i64
 	);
 
-	let result: Vec<serde_json::Value> = conn_pool
+	let mut wtr = WriterBuilder::new().has_headers(true).from_writer(vec![]);
+
+	for json_value in conn_pool
 		.fetch_all(query)
 		.await
 		.map_err(|e| {
@@ -325,11 +323,7 @@ async fn job_result_csv(
 		})?
 		.iter()
 		.map(|row| row.get("result"))
-		.collect();
-
-	let mut wtr = WriterBuilder::new().has_headers(true).from_writer(vec![]);
-
-	for json_value in result.into_iter() {
+	{
 		let result_csv: JobResultCsvResponse = CsvWrapper(json_value).try_into().map_err(|e| {
 			log::error!(
 				target:"reacher",
@@ -340,7 +334,7 @@ async fn job_result_csv(
 				e
 			);
 
-			ReacherError::CsvError()
+			ReacherError::Csv()
 		})?;
 		wtr.serialize(result_csv).map_err(|e| {
 			log::error!(
@@ -352,7 +346,7 @@ async fn job_result_csv(
 				e
 			);
 
-			ReacherError::CsvError()
+			ReacherError::Csv()
 		})?;
 	}
 
@@ -366,7 +360,7 @@ async fn job_result_csv(
 			e
 		);
 
-		ReacherError::CsvError()
+		ReacherError::Csv()
 	})?;
 
 	Ok(data)
