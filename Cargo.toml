@@ -19,5 +19,8 @@ sqlxmq = "0.3.4"
 sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "postgres", "uuid", "chrono", "json", "offline" ] }
 dotenv = "0.15.0"
 serde_json = "1.0"
+csv = "1.1.6"
 
 [dev-dependencies]
+
+[features]
