@@ -22,7 +22,7 @@ enum JobResultResponseFormat {
 // are 50 and 0 respectively
 #[derive(Serialize, Deserialize)]
 struct JobResultRequest {
-	format: JobResultResponseFormat,
+	format: Option<JobResultResponseFormat>,
 	limit: Option<u64>,
 	offset: Option<u64>,
 }
@@ -84,16 +84,27 @@ struct CsvWrapper(serde_json::Value);
 struct JobResultCsvResponse {
 	input: String,
 	is_reachable: String,
+	#[serde(rename = "misc.is_disposable")]
 	misc_is_disposable: bool,
+	#[serde(rename = "misc.is_role_account")]
 	misc_is_role_account: bool,
+	#[serde(rename = "mx.accepts_mail")]
 	mx_accepts_mail: bool,
+	#[serde(rename = "smtp.can_connect")]
 	smtp_can_connect: bool,
+	#[serde(rename = "smtp.has_full_inbox")]
 	smtp_has_full_inbox: bool,
+	#[serde(rename = "smtp.is_catch_all")]
 	smtp_is_catch_all: bool,
+	#[serde(rename = "smtp.is_deliverable")]
 	smtp_is_deliverable: bool,
+	#[serde(rename = "smtp.is_disabled")]
 	smtp_is_disabled: bool,
+	#[serde(rename = "syntax.is_valid_syntax")]
 	syntax_is_valid_syntax: bool,
+	#[serde(rename = "syntax.domain")]
 	syntax_domain: String,
+	#[serde(rename = "syntax.username")]
 	syntax_username: String,
 	error: Option<String>,
 }
@@ -246,7 +257,8 @@ async fn job_result(
 	conn_pool: Pool<Postgres>,
 	// ) -> Either<Result<impl warp::Reply, warp::Rejection>, Result<impl warp::Reply, warp::Rejection>> {
 ) -> Result<impl warp::Reply, warp::Rejection> {
-	match req.format {
+	let format = req.format.unwrap_or(JobResultResponseFormat::Json);
+	match format {
 		JobResultResponseFormat::Json => {
 			let data = job_result_json(
 				job_id,
