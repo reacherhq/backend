@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use reacher_backend::{
-	routes::{create_routes, manage_job::post::email_verification_task},
+	routes::{bulk::post::email_verification_task, create_routes},
 	sentry_util::{setup_sentry, CARGO_PKG_VERSION},
 };
 
