@@ -18,7 +18,7 @@
 
 use crate::check::{check_email, SMTP_TIMEOUT};
 use crate::errors::ReacherError;
-use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy};
+use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, Reachable};
 use sqlx::{Pool, Postgres};
 use std::{cmp::min, error::Error, time::Duration};
 use warp::Filter;
@@ -36,8 +36,61 @@ const EMAIL_TASK_BATCH_SIZE: usize = 1;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct TaskInput {
-	job_id: i32,
-	input: CheckEmailInput,
+	// fields for CheckEmailInput
+	input: Vec<String>,   // chunk of email from request
+	smtp_ports: Vec<u16>, // override empty smtp ports from request with default value
+	input_type: String,
+	proxy: Option<CheckEmailInputProxy>,
+	hello_name: Option<String>,
+	from_email: Option<String>,
+}
+
+struct TaskInputIterator {
+	body: TaskInput,
+	index: usize,
+}
+
+impl IntoIterator for TaskInput {
+	type Item = CheckEmailInput;
+	type IntoIter = TaskInputIterator;
+
+	fn into_iter(self) -> Self::IntoIter {
+		TaskInputIterator {
+			body: self,
+			index: 0,
+		}
+	}
+}
+
+impl Iterator for TaskInputIterator {
+	type Item = CheckEmailInput;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.index < self.body.smtp_ports.len() {
+			let mut item = CheckEmailInput::new(self.body.input.clone());
+
+			if let Some(name) = &self.body.hello_name {
+				item.set_hello_name(name.clone());
+			}
+
+			if let Some(email) = &self.body.from_email {
+				item.set_from_email(email.clone());
+			}
+
+			item.set_smtp_port(self.body.smtp_ports[self.index]);
+
+			if let Some(proxy) = &self.body.proxy {
+				item.set_proxy(proxy.clone());
+			}
+
+			item.set_smtp_timeout(Duration::from_secs(SMTP_TIMEOUT));
+
+			self.index += 1;
+			Some(item)
+		} else {
+			None
+		}
+	}
 }
 
 /// Endpoint request body.
@@ -48,7 +101,7 @@ struct CreateBulkRequestBody {
 	proxy: Option<CheckEmailInputProxy>,
 	hello_name: Option<String>,
 	from_email: Option<String>,
-	smtp_port: Option<u16>,
+	smtp_ports: Option<Vec<u16>>,
 }
 
 struct CreateBulkRequestBodyIterator {
@@ -58,7 +111,7 @@ struct CreateBulkRequestBodyIterator {
 }
 
 impl IntoIterator for CreateBulkRequestBody {
-	type Item = CheckEmailInput;
+	type Item = TaskInput;
 	type IntoIter = CreateBulkRequestBodyIterator;
 
 	fn into_iter(self) -> Self::IntoIter {
@@ -71,34 +124,22 @@ impl IntoIterator for CreateBulkRequestBody {
 }
 
 impl Iterator for CreateBulkRequestBodyIterator {
-	type Item = CheckEmailInput;
+	type Item = TaskInput;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.index < self.body.input.len() {
 			let bounded_index = min(self.index + self.batch_size, self.body.input.len());
 			let to_emails = self.body.input[self.index..bounded_index].to_vec();
-			let mut item = CheckEmailInput::new(to_emails);
-
-			if let Some(name) = &self.body.hello_name {
-				item.set_hello_name(name.clone());
-			}
-
-			if let Some(email) = &self.body.from_email {
-				item.set_from_email(email.clone());
-			}
-
-			if let Some(port) = self.body.smtp_port {
-				item.set_smtp_port(port);
-			}
-
-			if let Some(proxy) = &self.body.proxy {
-				item.set_proxy(proxy.clone());
-			}
-
-			item.set_smtp_timeout(Duration::from_secs(SMTP_TIMEOUT));
+			let item = TaskInput {
+				input: to_emails,
+				smtp_ports: self.body.smtp_ports.clone().unwrap_or_else(|| vec![25]),
+				input_type: self.body.input_type.clone(),
+				proxy: self.body.proxy.clone(),
+				hello_name: self.body.hello_name.clone(),
+				from_email: self.body.from_email.clone(),
+			};
 
 			self.index = bounded_index;
-
 			Some(item)
 		} else {
 			None
@@ -123,66 +164,76 @@ pub async fn email_verification_task(
 	// Additional arguments are optional, but can be used to access context
 	// provided via [`JobRegistry::set_context`].
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-	let task_input: TaskInput = current_job.json()?.unwrap();
+	let (job_id, task_input): (i32, TaskInput) = current_job.json()?.unwrap();
 
-	log::debug!(
-		target:"reacher",
-		"Starting task [email={}] for [job_id={}] and [uuid={}]",
-		task_input.input.to_emails[0],
-		task_input.job_id,
-		current_job.id(),
-	);
+	for check_email_input in task_input.into_iter() {
+		log::debug!(
+			target:"reacher",
+			"Starting task [email={}] for [job_id={}] and [uuid={}]",
+			check_email_input.to_emails[0],
+			job_id,
+			current_job.id(),
+		);
 
-	let response = check_email(&task_input.input).await;
+		let response = check_email(&check_email_input).await;
 
-	log::debug!(
-		target:"reacher",
-		"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
-		task_input.input.to_emails[0],
-		task_input.job_id,
-		current_job.id(),
-		response.is_reachable,
-	);
+		log::debug!(
+			target:"reacher",
+			"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
+			check_email_input.to_emails[0],
+			job_id,
+			current_job.id(),
+			response.is_reachable,
+		);
 
-	#[allow(unused_variables)]
-	let rec = sqlx::query!(
-		r#"
+		// unsuccessful validation terminate iteration
+		// continue iteration with next possible smtp port
+		if response.is_reachable == Reachable::Unknown {
+			continue;
+		}
+
+		// validation successful
+		// write results and terminate iteration
+		#[allow(unused_variables)]
+		let rec = sqlx::query!(
+			r#"
 			INSERT INTO email_results (job_id, result)
 			VALUES ($1, $2)
 			"#,
-		task_input.job_id,
-		serde_json::json!(response)
-	)
-	// TODO: This is a simplified solution and will work when
-	// the task queue and email results tables are in the same
-	// database. Keeping them in separate database will require
-	// some custom logic on the job registry side
-	// https://github.com/Diggsey/sqlxmq/issues/4
-	.fetch_optional(current_job.pool())
-	.await
-	.map_err(|e| {
-		log::error!(
-			target:"reacher",
-			"Failed to write [email={}] result to db for [job_id={}] and [uuid={}] with [error={}]",
-			task_input.input.to_emails[0],
-			task_input.job_id,
-			current_job.id(),
+			job_id,
+			serde_json::json!(response)
+		)
+		// TODO: This is a simplified solution and will work when
+		// the task queue and email results tables are in the same
+		// database. Keeping them in separate database will require
+		// some custom logic on the job registry side
+		// https://github.com/Diggsey/sqlxmq/issues/4
+		.fetch_optional(current_job.pool())
+		.await
+		.map_err(|e| {
+			log::error!(
+				target:"reacher",
+				"Failed to write [email={}] result to db for [job_id={}] and [uuid={}] with [error={}]",
+				response.input,
+				job_id,
+				current_job.id(),
+				e
+			);
+
 			e
+		})?;
+
+		log::debug!(
+			target:"reacher",
+			"Wrote result for [email={}] for [job_id={}] and [uuid={}]",
+			response.input,
+			job_id,
+			current_job.id(),
 		);
 
-		e
-	})?;
-
-	log::debug!(
-		target:"reacher",
-		"Wrote result for [email={}] for [job_id={}] and [uuid={}]",
-		task_input.input.to_emails[0],
-		task_input.job_id,
-		current_job.id(),
-	);
-
-	current_job.complete().await?;
-
+		current_job.complete().await?;
+		break;
+	}
 	Ok(())
 }
 
@@ -213,14 +264,9 @@ async fn create_bulk_request(
 	})?;
 
 	for task_input in body.into_iter() {
-		let task = TaskInput {
-			input: task_input,
-			job_id: rec.id,
-		};
-
 		let task_uuid = email_verification_task
 			.builder()
-			.set_json(&task)
+			.set_json(&(rec.id, task_input))
 			.unwrap()
 			.spawn(&conn_pool)
 			.await
