@@ -18,7 +18,7 @@
 
 use crate::check::{check_email, SMTP_TIMEOUT};
 use crate::errors::ReacherError;
-use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, Reachable};
+use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput, Reachable};
 use sqlx::{Pool, Postgres};
 use std::{cmp::min, error::Error, time::Duration};
 use warp::Filter;
@@ -165,8 +165,9 @@ pub async fn email_verification_task(
 	// provided via [`JobRegistry::set_context`].
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 	let (job_id, task_input): (i32, TaskInput) = current_job.json()?.unwrap();
+	let mut final_response: Option<CheckEmailOutput> = None;
 
-	for check_email_input in task_input.into_iter() {
+	for check_email_input in task_input {
 		log::debug!(
 			target:"reacher",
 			"Starting task [email={}] for [job_id={}] and [uuid={}]",
@@ -186,13 +187,22 @@ pub async fn email_verification_task(
 			response.is_reachable,
 		);
 
-		// unsuccessful validation terminate iteration
-		// continue iteration with next possible smtp port
+		// unsuccessful validation continue iteration with next possible smtp port
 		if response.is_reachable == Reachable::Unknown {
+			final_response = Some(response);
 			continue;
 		}
+		// successful validation attempt complete task break iteration
+		else {
+			final_response = Some(response);
+			break;
+		}
+	}
 
-		// validation successful
+	// final response can only be empty if there
+	// were no validation attempts. This can can
+	// never occur currently
+	if let Some(response) = final_response {
 		// write results and terminate iteration
 		#[allow(unused_variables)]
 		let rec = sqlx::query!(
@@ -230,10 +240,9 @@ pub async fn email_verification_task(
 			job_id,
 			current_job.id(),
 		);
-
-		current_job.complete().await?;
-		break;
 	}
+
+	current_job.complete().await?;
 	Ok(())
 }
 
