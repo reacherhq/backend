@@ -39,7 +39,6 @@ struct TaskInput {
 	// fields for CheckEmailInput
 	to_emails: Vec<String>,   // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
 	smtp_ports: Vec<u16>, // override empty smtp ports from request with default value
-	input_type: String,
 	proxy: Option<CheckEmailInputProxy>,
 	hello_name: Option<String>,
 	from_email: Option<String>,
@@ -67,7 +66,7 @@ impl Iterator for TaskInputIterator {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.index < self.body.smtp_ports.len() {
-			let mut item = CheckEmailInput::new(self.body.input.clone());
+			let mut item = CheckEmailInput::new(self.body.to_emails.clone());
 
 			if let Some(name) = &self.body.hello_name {
 				item.set_hello_name(name.clone());
@@ -131,9 +130,8 @@ impl Iterator for CreateBulkRequestBodyIterator {
 			let bounded_index = min(self.index + self.batch_size, self.body.input.len());
 			let to_emails = self.body.input[self.index..bounded_index].to_vec();
 			let item = TaskInput {
-				input: to_emails,
+				to_emails,
 				smtp_ports: self.body.smtp_ports.clone().unwrap_or_else(|| vec![25]),
-				input_type: self.body.input_type.clone(),
 				proxy: self.body.proxy.clone(),
 				hello_name: self.body.hello_name.clone(),
 				from_email: self.body.from_email.clone(),
