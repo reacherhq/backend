@@ -37,8 +37,8 @@ const EMAIL_TASK_BATCH_SIZE: usize = 1;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct TaskInput {
 	// fields for CheckEmailInput
-	to_emails: Vec<String>,   // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
-	smtp_ports: Vec<u16>, // override empty smtp ports from request with default value
+	to_emails: Vec<String>, // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
+	smtp_ports: Vec<u16>,   // override empty smtp ports from request with default value
 	proxy: Option<CheckEmailInputProxy>,
 	hello_name: Option<String>,
 	from_email: Option<String>,
@@ -162,7 +162,9 @@ pub async fn email_verification_task(
 	// Additional arguments are optional, but can be used to access context
 	// provided via [`JobRegistry::set_context`].
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-	let (job_id, task_input): (i32, TaskInput) = current_job.json()?.unwrap();
+	let (job_id, task_input): (i32, TaskInput) = current_job
+		.json()?
+		.ok_or_else(|| "Malformed task with no task arguments given.")?;
 	let mut final_response: Option<CheckEmailOutput> = None;
 
 	for check_email_input in task_input {
@@ -273,8 +275,17 @@ async fn create_bulk_request(
 	for task_input in body.into_iter() {
 		let task_uuid = email_verification_task
 			.builder()
-			.set_json(&(rec.id, task_input))
-			.unwrap()
+			.set_json(&(rec.id, &task_input))
+			.map_err(|e| {
+				log::error!(
+					target:"reacher",
+					"Failed to send task queue the following [input={:?}] with [error={}]",
+					&task_input,
+					e
+				);
+
+				ReacherError::Json()
+			})?
 			.spawn(&conn_pool)
 			.await
 			.map_err(|e| {
