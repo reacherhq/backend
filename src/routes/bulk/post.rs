@@ -164,7 +164,7 @@ pub async fn email_verification_task(
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 	let (job_id, task_input): (i32, TaskInput) = current_job
 		.json()?
-		.ok_or_else(|| "Malformed task with no task arguments given.")?;
+		.ok_or("Malformed task with no task arguments given.")?;
 	let mut final_response: Option<CheckEmailOutput> = None;
 
 	for check_email_input in task_input {
@@ -187,14 +187,14 @@ pub async fn email_verification_task(
 			response.is_reachable,
 		);
 
+		let is_reachable = response.is_reachable == Reachable::Unknown;
+		final_response = Some(response);
 		// unsuccessful validation continue iteration with next possible smtp port
-		if response.is_reachable == Reachable::Unknown {
-			final_response = Some(response);
+		if is_reachable {
 			continue;
 		}
 		// successful validation attempt complete task break iteration
 		else {
-			final_response = Some(response);
 			break;
 		}
 	}
