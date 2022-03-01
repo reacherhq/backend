@@ -37,7 +37,7 @@ const EMAIL_TASK_BATCH_SIZE: usize = 1;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct TaskInput {
 	// fields for CheckEmailInput
-	input: Vec<String>,   // chunk of email from request
+	to_emails: Vec<String>,   // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
 	smtp_ports: Vec<u16>, // override empty smtp ports from request with default value
 	input_type: String,
 	proxy: Option<CheckEmailInputProxy>,
