@@ -411,9 +411,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "check-if-email-exists"
-version = "0.8.28"
+version = "0.8.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4119091a5f8b04a935a900ac2d7aa7672b2e189daa726299f253c268b95b1fb4"
+checksum = "68f0b85e3bcd68d572f4919ae20a5a4916f182bab75bfb6785982554a69c954f"
 dependencies = [
  "async-native-tls",
  "async-recursion",
@@ -1216,9 +1216,9 @@ dependencies = [
 
 [[package]]
 name = "mailchecker"
-version = "4.1.12"
+version = "4.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3b64b6162eb576120144f706869b52f6c7bcb7635903cb53030ba76f7cfdf71"
+checksum = "321f65b2250fecfc645f9ec7b2e460e2b42cc2d4deedbe50a84d505cec2d7aa8"
 dependencies = [
  "fast_chemail",
  "once_cell",
@@ -1593,14 +1593,13 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e7573632e6454cf6b99d7aac4ccca54be06da05aca2ef7423d22d27d4d4bcd8"
+checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
  "rand_chacha",
  "rand_core",
- "rand_hc",
 ]
 
 [[package]]
@@ -1620,15 +1619,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom",
-]
-
-[[package]]
-name = "rand_hc"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d51e9f596de227fda2ea6c84607f5558e196eeaf43c986b724ba4fb8fdf497e7"
-dependencies = [
- "rand_core",
 ]
 
 [[package]]
