@@ -41,12 +41,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	env_logger::init();
 	let pg_conn = env::var("DATABASE_URL").unwrap();
+	let pg_max_conn = env::var("DATABASE_MAX_CONNECTIONS").map_or(5, |var| {
+		var.parse::<u32>()
+			.expect("Environment variable DATABASE_MAX_CONNECTIONS should parse to u32")
+	});
+	let min_task_conc = env::var("MINIMUM_TASK_CONCURRENCY").map_or(10, |var| {
+		var.parse::<usize>()
+			.expect("Environment variable MINIMUM_TASK_CONCURRENCY should parse to usize")
+	});
+	let max_conc_task_fetch = env::var("MAXIMUM_CONCURRENT_TASK_FETCH").map_or(20, |var| {
+		var.parse::<usize>()
+			.expect("Environment variable MAXIMUM_CONCURRENT_TASK_FETCH should parse to usize")
+	});
 
 	// create connection pool with database
 	// connection pool internally the shared db connection
 	// with arc so it can safely be cloned and shared across threads
 	let pool = PgPoolOptions::new()
-		.max_connections(5)
+		.max_connections(pg_max_conn)
 		.connect(pg_conn.as_str())
 		.await?;
 
@@ -61,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.runner(&pool)
 		// Here is where you can configure the job runner
 		// Aim to keep 10-20 jobs running at a time.
-		.set_concurrency(10, 20)
+		.set_concurrency(min_task_conc, max_conc_task_fetch)
 		// Start the job runner in the background.
 		.run()
 		.await?;
