@@ -203,9 +203,7 @@ pub fn log_unknown_errors(result: &CheckEmailOutput) {
 		{
 			log::debug!(target: "reacher", "Transient error: {}", response.message[0]);
 		}
-		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Io(err))))
-			if has_smtp_io_errors(err) =>
-		{
+		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Io(err)))) if has_smtp_io_errors(err) => {
 			log::debug!(target: "reacher", "Io error: {}", err);
 		}
 		(_, _, Err(error)) => {
