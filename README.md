@@ -65,12 +65,16 @@ These are the environment variables used to configure the HTTP server:
 
 | Env Var              | Required? | Description                                                                                                       | Default            |
 | -------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `DATABASE_URL`     | Yes        | Database connection string for storing results and task queue                                                                | not defined |
 | `RCH_FROM_EMAIL`     | No        | The email to use in the `MAIL FROM:` SMTP command.                                                                | `user@example.org` |
 | `RCH_HTTP_HOST`      | No        | The host name to bind the HTTP server to.                                                                         | `127.0.0.1`        |
 | `PORT`               | No        | The port to bind the HTTP server to, populated by Heroku.                                                         | `8080`             |
 | `RCH_SENTRY_DSN`     | No        | If set, bug reports will be sent to this [Sentry](https://sentry.io) DSN.                                         | not defined        |
 | `RCH_SAASIFY_SECRET` | No        | If set, all requests must have a `x-saasify-proxy-secret` header set, equal to the value of `RCH_SAASIFY_SECRET`. | not defined        |
 | `RUST_LOG`           | No        | One of `trace,debug,warn,error,info`. 💡 PRO TIP: `RUST_LOG=debug` is very handful for debugging purposes.        | not defined                |
+| `RCH_DATABASE_MAX_CONNECTIONS`           | No        | Connections created for the database pool   | 5                |
+| `RCH_MINIMUM_TASK_CONCURRENCY`           | No        | Minimum number of concurrent running tasks below which more tasks are fetched   | 10                |
+| `RCH_MAXIMUM_CONCURRENT_TASK_FETCH`           | No        | Maximum number of tasks fetched at once   | 20                |
 
 ## REST API Documentation
 

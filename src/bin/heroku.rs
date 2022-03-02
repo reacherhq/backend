@@ -40,18 +40,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	let _ = dotenv();
 
 	env_logger::init();
-	let pg_conn = env::var("DATABASE_URL").unwrap();
-	let pg_max_conn = env::var("DATABASE_MAX_CONNECTIONS").map_or(5, |var| {
+	let pg_conn =
+		env::var("DATABASE_URL").expect("Environment variable DATABASE_URL should be set");
+	let pg_max_conn = env::var("RCH_DATABASE_MAX_CONNECTIONS").map_or(5, |var| {
 		var.parse::<u32>()
-			.expect("Environment variable DATABASE_MAX_CONNECTIONS should parse to u32")
+			.expect("Environment variable RCH_DATABASE_MAX_CONNECTIONS should parse to u32")
 	});
-	let min_task_conc = env::var("MINIMUM_TASK_CONCURRENCY").map_or(10, |var| {
+	let min_task_conc = env::var("RCH_MINIMUM_TASK_CONCURRENCY").map_or(10, |var| {
 		var.parse::<usize>()
-			.expect("Environment variable MINIMUM_TASK_CONCURRENCY should parse to usize")
+			.expect("Environment variable RCH_MINIMUM_TASK_CONCURRENCY should parse to usize")
 	});
-	let max_conc_task_fetch = env::var("MAXIMUM_CONCURRENT_TASK_FETCH").map_or(20, |var| {
+	let max_conc_task_fetch = env::var("RCH_MAXIMUM_CONCURRENT_TASK_FETCH").map_or(20, |var| {
 		var.parse::<usize>()
-			.expect("Environment variable MAXIMUM_CONCURRENT_TASK_FETCH should parse to usize")
+			.expect("Environment variable RCH_MAXIMUM_CONCURRENT_TASK_FETCH should parse to usize")
 	});
 
 	// create connection pool with database
