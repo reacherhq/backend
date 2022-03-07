@@ -14,6 +14,12 @@ This repository holds the backend for [Reacher](https://reacher.email). The back
 -   [`check-if-email-exists`](https://github.com/reacherhq/check-if-email-exists), which performs the core email verification logic,
 -   [`warp`](https://github.com/seanmonstar/warp) web framework.
 
+## ⚠️ Importance Notice: WIP branch
+
+The `master` branch you are viewing now contains Work in Progress code on the [bulk API endpoint](https://github.com/orgs/reacherhq/projects/1). Some beta Docker images are also shipped for early usage. Please note that **the API might change** and the **code is not considered stable or production-ready**. Please use this branch only if you know what you are doing.
+
+For the latest stable realease, please use [v0.3.12](https://github.com/reacherhq/backend/tree/v0.3.12).
+
 ## Get Started
 
 There are 3 ways you can run this backend.
