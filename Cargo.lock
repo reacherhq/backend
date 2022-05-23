@@ -2125,9 +2125,9 @@ dependencies = [
 
 [[package]]
 name = "sqlxmq"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "045d8c9fd3c9b4500ea320fc89a3ce50c9ae65df4e8b6b6d0eb288a2617a3e3f"
+checksum = "e96e203c270a39b6516eaa3dc0154643a9343c0009943620c8b8a81ad4a0405f"
 dependencies = [
  "anymap2",
  "chrono",
@@ -2143,9 +2143,9 @@ dependencies = [
 
 [[package]]
 name = "sqlxmq_macros"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0496eb68f9efe23edbb13fb585d062438c30c361c44abf31b2e879ddadcb11b"
+checksum = "5999dc062ebf712faca91f8cea8c53b3d897735f10338084942610afaeaa482b"
 dependencies = [
  "proc-macro2",
  "quote",
