@@ -18,7 +18,7 @@
 	"servers": [
 		{
 			"url": "https://api.reacher.email/v0",
-			"description": "Reacher Production v0"
+			"description": "Reacher Production"
 		}
 	],
 	"paths": {
