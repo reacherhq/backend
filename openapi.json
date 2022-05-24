@@ -2,28 +2,29 @@
 	"openapi": "3.0.0",
 	"info": {
 		"title": "Reacher",
-		"version": "0.3",
-		"description": "Reacher backend OpenAPIv3 specification.",
+		"version": "0.3.*",
+		"description": "### What is Reacher?\n\nReacher is a powerful, free and open-source email verification API service. It is provided both as a SaaS and as a self-host solution.",
 		"license": {
-			"name": "AGPL-3.0",
+			"name": "AGPL-3.0 OR Commercial",
 			"url": "https://github.com/reacherhq/backend/blob/master/LICENSE.md"
 		},
 		"contact": {
 			"name": "Reacher",
 			"url": "https://reacher.email",
 			"email": "amaury@reacher.email"
-		}
+		},
+		"termsOfService": "https://github.com/reacherhq/policies/blob/master/terms/index.fr.md"
 	},
 	"servers": [
 		{
 			"url": "https://api.reacher.email/v0",
-			"description": "Reacher backend."
+			"description": "Reacher Production v0"
 		}
 	],
 	"paths": {
 		"/check_email": {
 			"post": {
-				"summary": "Email verification function",
+				"summary": "/check_email",
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -88,8 +89,8 @@
 							"type": "string"
 						},
 						"in": "header",
-						"name": "x-saasify-proxy-secret",
-						"description": "Secret key to only allow requests coming from Saasify.",
+						"name": "Authorization",
+						"description": "Your personal Reacher API key",
 						"required": true
 					}
 				]
@@ -335,6 +336,13 @@
 				"required": ["host", "port"]
 			}
 		},
-		"securitySchemes": {}
+		"securitySchemes": {
+			"Authorization": {
+				"name": "Authorization",
+				"type": "apiKey",
+				"in": "header",
+				"description": "A Reacher API key is required for all requests. Sign up on https://reacher.email to get your personal API key."
+			}
+		}
 	}
 }
