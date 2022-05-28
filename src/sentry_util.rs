@@ -41,11 +41,14 @@ pub fn setup_sentry() -> sentry::ClientInitGuard {
 	sentry
 }
 
-/// If HEROKU_APP_NAME environment variable is set, add it to the sentry `extra`
+/// If BACKEND_NAME environment variable is set, add it to the sentry `extra`
 /// properties.
-fn add_heroku_app_name(mut extra: BTreeMap<String, Value>) -> BTreeMap<String, Value> {
-	if let Ok(heroku_app_name) = env::var("HEROKU_APP_NAME") {
-		extra.insert("HEROKU_APP_NAME".into(), heroku_app_name.into());
+/// For backwards compatibility, we also support HEROKU_APP_NAME env variable.
+fn add_backend_name(mut extra: BTreeMap<String, Value>) -> BTreeMap<String, Value> {
+	if let Ok(n) = env::var("BACKEND_NAME") {
+		extra.insert("BACKEND_NAME".into(), n.into());
+	} else if let Ok(n) = env::var("HEROKU_APP_NAME") {
+		extra.insert("BACKEND_NAME".into(), n.into());
 	}
 
 	extra
@@ -61,7 +64,7 @@ pub fn metrics(message: String, duration: u128, domain: &str) {
 
 	extra.insert("duration".into(), duration.to_string().into());
 	extra.insert("domain".into(), domain.into());
-	extra = add_heroku_app_name(extra);
+	extra = add_backend_name(extra);
 
 	sentry::capture_event(Event {
 		extra,
@@ -83,7 +86,7 @@ pub fn error(message: String, result: Option<&str>, username: &str) {
 		extra.insert("CheckEmailOutput".into(), redact(result, username).into());
 	}
 
-	extra = add_heroku_app_name(extra);
+	extra = add_backend_name(extra);
 
 	sentry::capture_event(Event {
 		extra,
@@ -108,65 +111,10 @@ fn has_smtp_io_errors(error: &IoError) -> bool {
 	error.to_string() == "incomplete"
 }
 
-/// Check if the message contains known SMTP Permanent errors.
-fn has_smtp_permanent_errors(message: &[String]) -> bool {
-	let first_line = message[0].to_lowercase();
-
-	// 5.7.1 IP address blacklisted by recipient
-	// 5.7.1 Service unavailable; Client host [147.75.45.223] is blacklisted. Visit https://www.sophos.com/en-us/threat-center/ip-lookup.aspx?ip=147.75.45.223 to request delisting
-	// 5.3.0 <aaro.peramaa@helsinki.fi>... Mail from 147.75.45.223 rejected by Abusix blacklist
-	first_line.contains("blacklist") ||
-	// Rejected because 23.129.64.213 is in a black list at b.barracudacentral.org
-	first_line.contains("black list") ||
-	// 5.7.1 Recipient not authorized, your IP has been found on a block list
-	first_line.contains("block list") ||
-	// Unable to add <EMAIL> because host 23.129.64.184 is listed on zen.spamhaus.org
-	// 5.7.1 Service unavailable, Client host [23.129.64.184] blocked using Spamhaus.
-	// 5.7.1 Email cannot be delivered. Reason: Email detected as Spam by spam filters.
-	first_line.contains("spam") ||
-	// host 23.129.64.216 is listed at combined.mail.abusix.zone (127.0.0.12,
-	first_line.contains("abusix") ||
-	// 5.7.1 Relaying denied. IP name possibly forged [45.154.35.252]
-	// 5.7.1 Relaying denied: You must check for new mail before sending mail. [23.129.64.216]
-	first_line.contains("relaying denied") ||
-	// 5.7.1 <unknown[23.129.64.100]>: Client host rejected: Access denied
-	first_line.contains("access denied") ||
-	// sorry, mail from your location [5.79.109.48] is administratively denied (#5.7.1)
-	first_line.contains("administratively denied") ||
-	// 5.7.606 Access denied, banned sending IP [23.129.64.216]
-	first_line.contains("banned") ||
-	// Blocked - see https://ipcheck.proofpoint.com/?ip=23.129.64.192
-	// 5.7.1 Mail from 23.129.64.183 has been blocked by Trend Micro Email Reputation Service.
-	first_line.contains("blocked") ||
-	// Connection rejected by policy [7.3] 38206, please visit https://support.symantec.com/en_US/article.TECH246726.html for more details about this error message.
-	first_line.contains("connection rejected") ||
-	// 5.7.1 Client host rejected: cannot find your reverse hostname, [23.129.64.184]
-	first_line.contains("cannot find your reverse hostname") ||
-	// csi.mimecast.org Poor Reputation Sender. - https://community.mimecast.com/docs/DOC-1369#550 [6ATVl4DjOvSA6XNsWGoUFw.us31]
-	first_line.contains("poor reputation") ||
-	// JunkMail rejected - (gmail.com) [193.218.118.140]:46615 is in an RBL: http://www.barracudanetworks.com/reputation/?pr=1&ip=193.218.118.140
-	first_line.contains("junkmail")||
-	// Your access to this mail system has been rejected due to the sending MTA\'s poor reputation. If you believe that this failure is in error, please contact the intended recipient via alternate means.
-	(message.len() >= 2 && message[1].contains("rejected"))
-}
-
 /// Check if the message contains known SMTP Transient errors.
 fn has_smtp_transient_errors(message: &[String]) -> bool {
 	let first_line = message[0].to_lowercase();
 
-	// Blocked - see https://www.spamcop.net/bl.shtml?23.129.64.211
-	first_line.contains("blocked") ||
-	// 4.7.1 <EMAIL>: Relay access denied
-	first_line.contains("access denied") ||
-	// 4.7.25 Client host rejected: cannot find your hostname, [147.75.45.223]
-	// 4.7.1 Client host rejected: cannot find your reverse hostname, [147.75.45.223]
-	first_line.contains("host rejected") ||
-	// relay not permitted!
-	first_line.contains("relay not permitted") ||
-	// You dont seem to have a reverse dns entry. Come back later. You are greylisted for 20 minutes. See http://www.fsf.org/about/systems/greylisting
-	first_line.contains("reverse dns entry") ||
-	// 23.129.64.216 is not yet authorized to deliver mail from
-	first_line.contains("not yet authorized") ||
 	// 4.3.2 Please try again later
 	first_line.contains("try again") ||
 	// Temporary local problem - please try later
@@ -192,11 +140,6 @@ pub fn log_unknown_errors(result: &CheckEmailOutput) {
 				Some(format!("{:#?}", result).as_ref()),
 				result.syntax.username.as_str(),
 			);
-		}
-		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Permanent(response))))
-			if has_smtp_permanent_errors(&response.message) =>
-		{
-			log::debug!(target: "reacher", "Permanent error: {}", response.message[0]);
 		}
 		(_, _, Err(SmtpError::SmtpError(AsyncSmtpError::Transient(response))))
 			if has_smtp_transient_errors(&response.message) =>
