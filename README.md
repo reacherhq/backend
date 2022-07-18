@@ -22,15 +22,9 @@ For the latest stable realease, please use [v0.3.12](https://github.com/reacherh
 
 ## Get Started
 
-There are 3 ways you can run this backend.
+There are 2 ways you can run this backend.
 
-### 1. One-Click Deploy to Heroku
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/reacherhq/backend/tree/v0.3.12)
-
-After clicking on the button, just follow the instructions on screen.
-
-### 2. Use Docker
+### 1. Use Docker
 
 The [Docker image](./Dockerfile) is hosted on Docker Hub: https://hub.docker.com/r/reacherhq/backend.
 
@@ -55,7 +49,7 @@ You can then send a POST request with the following body to `http://localhost:80
 }
 ```
 
-### 3. Run locally
+### 2. Run locally
 
 If you prefer to run the server locally on your machine, just clone the repository and run:
 
