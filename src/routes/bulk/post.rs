@@ -315,7 +315,7 @@ async fn create_bulk_request(
 /// Create the `POST /bulk` endpoint.
 /// The endpoint accepts list of email address and creates
 /// a new job to check them.
-pub fn create_bulk_email_vrfy_job(
+pub fn create_bulk_job(
 	conn_pool: Pool<Postgres>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk")
