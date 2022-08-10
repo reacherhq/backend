@@ -142,6 +142,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-native-tls"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d57d4cec3c647232e1094dc013546c0b33ce785d8aeb251e1f20dfaf8a9a13fe"
+dependencies = [
+ "native-tls",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "async-process"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -175,7 +187,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "472a081e9e3a92f9201237f07b51c0bab657336ca6600fd2f243c9cc3c9c81ff"
 dependencies = [
- "async-native-tls",
+ "async-native-tls 0.3.3",
  "async-std",
  "async-trait",
  "base64",
@@ -191,6 +203,29 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "async-smtp"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6da21e1dd19fbad3e095ad519fb1558ab77fd82e5c4778dca8f9be0464589e1e"
+dependencies = [
+ "async-native-tls 0.4.0",
+ "async-trait",
+ "base64",
+ "bufstream",
+ "futures",
+ "hostname 0.3.1",
+ "log",
+ "nom 7.1.1",
+ "pin-project",
+ "pin-utils",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -413,9 +448,9 @@ version = "0.8.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f4d005f064f8d17b8464867d44ba22461b27ffab4e7aedcc8f30aff9c73ed90"
 dependencies = [
- "async-native-tls",
+ "async-native-tls 0.3.3",
  "async-recursion",
- "async-smtp",
+ "async-smtp 0.4.0",
  "async-std",
  "async-std-resolver",
  "fast-socks5",
@@ -1654,7 +1689,7 @@ dependencies = [
 name = "reacher_backend"
 version = "0.4.0"
 dependencies = [
- "async-smtp",
+ "async-smtp 0.5.0",
  "check-if-email-exists",
  "csv",
  "dotenv",

@@ -6,7 +6,7 @@ license = "AGPL-3.0"
 publish = false
 
 [dependencies]
-async-smtp = "0.4"
+async-smtp = "0.5"
 check-if-email-exists = "0.8.29"
 env_logger = "0.9"
 log = "0.4"
