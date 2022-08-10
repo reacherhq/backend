@@ -1,1 +1,0 @@
-The migration files have been copied from the [sqlxmq repo](https://github.com/Diggsey/sqlxmq) as per the [given instructions](https://github.com/Diggsey/sqlxmq/blob/6d3ed6fb99e7592e370a7f3ec074ce0bebae62fd/README.md?plain=1#L111).

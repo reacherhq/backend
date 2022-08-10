@@ -16,7 +16,7 @@
 
 //! This file implements the `GET /bulk/{id}` endpoint.
 
-use crate::errors::ReacherError;
+use super::error::BulkError;
 use serde::Serialize;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres};
@@ -46,7 +46,7 @@ struct JobRecord {
 
 /// Summary of a bulk verification job status
 #[derive(Debug, Serialize)]
-struct JobStatusSummaryResponseBody {
+struct JobStatusSummary {
 	total_safe: i32,
 	total_risky: i32,
 	total_invalid: i32,
@@ -58,9 +58,10 @@ struct JobStatusSummaryResponseBody {
 struct JobStatusResponseBody {
 	job_id: i32,
 	created_at: DateTime<Utc>,
+	finished_at: Option<DateTime<Utc>>,
 	total_records: i32,
 	total_processed: i32,
-	summary: JobStatusSummaryResponseBody,
+	summary: JobStatusSummary,
 	job_status: ValidStatus,
 }
 
@@ -86,7 +87,7 @@ async fn job_status(
 			job_id,
 			e
 		);
-		ReacherError::from(e)
+		BulkError::from(e)
 	})?;
 
 	let agg_info = sqlx::query!(
@@ -96,7 +97,8 @@ async fn job_status(
 			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'safe' THEN 1 END) as safe_count,
 			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'risky' THEN 1 END) as risky_count,
 			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'invalid' THEN 1 END) as invalid_count,
-			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'unknown' THEN 1 END) as unknown_count
+			COUNT(CASE WHEN result ->> 'is_reachable' LIKE 'unknown' THEN 1 END) as unknown_count,
+			(SELECT created_at FROM email_results WHERE job_id = $1 ORDER BY created_at DESC LIMIT 1) as finished_at
 		FROM email_results
 		WHERE job_id = $1
 		"#,
@@ -106,30 +108,50 @@ async fn job_status(
 	.await
 	.map_err(|e| {
 		log::error!(
-			target:"reacher/v0/bulk/",
+			target:"reacher",
 			"Failed to get aggregate info for [job_id={}] with [error={}]",
 			job_id,
 			e
 		);
-		ReacherError::from(e)
+		BulkError::from(e)
 	})?;
 
-	let job_status = if (agg_info.total_processed.unwrap() as i32) < job_rec.total_records {
-		ValidStatus::Running
+	let (job_status, finished_at) = if (agg_info
+		.total_processed
+		.expect("sql COUNT() returns an int. qed.") as i32)
+		< job_rec.total_records
+	{
+		(ValidStatus::Running, None)
 	} else {
-		ValidStatus::Completed
+		(
+			ValidStatus::Completed,
+			Some(
+				agg_info
+					.finished_at
+					.expect("always at least one task in the job. qed."),
+			),
+		)
 	};
 
 	Ok(warp::reply::json(&JobStatusResponseBody {
 		job_id: job_rec.id,
 		created_at: job_rec.created_at,
+		finished_at,
 		total_records: job_rec.total_records,
-		total_processed: agg_info.total_processed.unwrap() as i32,
-		summary: JobStatusSummaryResponseBody {
-			total_safe: agg_info.safe_count.unwrap() as i32,
-			total_risky: agg_info.risky_count.unwrap() as i32,
-			total_invalid: agg_info.invalid_count.unwrap() as i32,
-			total_unknown: agg_info.unknown_count.unwrap() as i32,
+		total_processed: agg_info
+			.total_processed
+			.expect("sql COUNT returns an int. qed.") as i32,
+		summary: JobStatusSummary {
+			total_safe: agg_info.safe_count.expect("sql COUNT returns an int. qed.") as i32,
+			total_risky: agg_info
+				.risky_count
+				.expect("sql COUNT returns an int. qed.") as i32,
+			total_invalid: agg_info
+				.invalid_count
+				.expect("sql COUNT returns an int. qed.") as i32,
+			total_unknown: agg_info
+				.unknown_count
+				.expect("sql COUNT returns an int. qed.") as i32,
 		},
 		job_status,
 	}))

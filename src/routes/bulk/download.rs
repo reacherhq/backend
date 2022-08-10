@@ -1,10 +1,11 @@
-use crate::errors::ReacherError;
+use super::error::BulkError;
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Pool, Postgres, Row};
 use std::convert::{TryFrom, TryInto};
 use warp::Filter;
 
+/// Defines the download format, passed in as a query param.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum JobResultResponseFormat {
@@ -33,7 +34,7 @@ struct JobResultJsonResponse {
 struct CsvWrapper(serde_json::Value);
 
 /// Simplified output of `CheckEmailOutput` struct
-/// for csv fields
+/// for csv fields.
 #[derive(Debug, Serialize)]
 struct JobResultCsvResponse {
 	input: String,
@@ -231,7 +232,7 @@ async fn job_result(
 						e
 					);
 
-					ReacherError::Json()
+					BulkError::Json
 				})?;
 
 			Ok(warp::reply::with_header(
@@ -285,7 +286,7 @@ async fn job_result_json(
 				e
 			);
 
-			ReacherError::from(e)
+			BulkError::from(e)
 		})?
 		.iter()
 		.map(|row| row.get("result"))
@@ -325,7 +326,7 @@ async fn job_result_csv(
 				e
 			);
 
-			ReacherError::from(e)
+			BulkError::from(e)
 		})?
 		.iter()
 		.map(|row| row.get("result"))
@@ -340,7 +341,7 @@ async fn job_result_csv(
 				e
 			);
 
-			ReacherError::Csv()
+			BulkError::Csv
 		})?;
 		wtr.serialize(result_csv).map_err(|e| {
 			log::error!(
@@ -352,7 +353,7 @@ async fn job_result_csv(
 				e
 			);
 
-			ReacherError::Csv()
+			BulkError::Csv
 		})?;
 	}
 
@@ -366,7 +367,7 @@ async fn job_result_csv(
 			e
 		);
 
-		ReacherError::Csv()
+		BulkError::Csv
 	})?;
 
 	Ok(data)
