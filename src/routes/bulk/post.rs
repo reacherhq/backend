@@ -16,8 +16,8 @@
 
 //! This file implements the `POST /bulk` endpoint.
 
+use super::error::BulkError;
 use crate::check::{check_email, SMTP_TIMEOUT};
-use crate::errors::ReacherError;
 use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput, Reachable};
 use sqlx::{Pool, Postgres};
 use std::{cmp::min, error::Error, time::Duration};
@@ -251,6 +251,10 @@ async fn create_bulk_request(
 	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+	if body.input.len() == 0 {
+		return Err(BulkError::EmptyInput.into());
+	}
+
 	// create job entry
 	let rec = sqlx::query!(
 		r#"
@@ -269,7 +273,7 @@ async fn create_bulk_request(
 			&body,
 			e
 		);
-		ReacherError::from(e)
+		BulkError::from(e)
 	})?;
 
 	for task_input in body.into_iter() {
@@ -284,7 +288,7 @@ async fn create_bulk_request(
 					e
 				);
 
-				ReacherError::Json()
+				BulkError::Json
 			})?
 			.spawn(&conn_pool)
 			.await
@@ -296,7 +300,7 @@ async fn create_bulk_request(
 					e
 				);
 
-				ReacherError::from(e)
+				BulkError::from(e)
 			})?;
 
 		log::debug!(
