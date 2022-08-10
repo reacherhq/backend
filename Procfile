@@ -1,1 +1,1 @@
-web: ./target/release/heroku
+web: ./target/release/reacher_backend
