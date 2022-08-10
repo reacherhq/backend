@@ -251,7 +251,7 @@ async fn create_bulk_request(
 	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-	if body.input.len() == 0 {
+	if body.input.is_empty() {
 		return Err(BulkError::EmptyInput.into());
 	}
 
