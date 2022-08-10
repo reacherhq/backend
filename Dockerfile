@@ -28,9 +28,9 @@ RUN adduser -D -s /bin/sh -u 1000 -G reacher reacher
 
 WORKDIR /home/reacher/bin/
 
-COPY --from=cargo-build /usr/src/reacher/target/x86_64-unknown-linux-musl/release/heroku .
+COPY --from=cargo-build /usr/src/reacher/target/x86_64-unknown-linux-musl/release/reacher_backend .
 
-RUN chown reacher:reacher heroku
+RUN chown reacher:reacher reacher_backend
 
 USER reacher
 
@@ -40,4 +40,4 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["./heroku"]
+CMD ["./reacher_backend"]
