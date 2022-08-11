@@ -24,7 +24,7 @@ use warp::Filter;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct EndpointRequest {
+pub struct EndpointRequest {
 	from_email: Option<String>,
 	hello_name: Option<String>,
 	proxy: Option<CheckEmailInputProxy>,

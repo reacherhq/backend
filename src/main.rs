@@ -35,6 +35,7 @@ use warp::Filter;
 /// The program panics if at least one of the environment variables is
 /// malformed:
 /// - RCH_HTTP_HOST,
+/// - DATABASE_URL, (if bulk is enabled)
 /// - PORT.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {

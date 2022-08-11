@@ -41,7 +41,6 @@ jobs:
 
   # Cargo test.
   test:
-    if: false # skip job until tests can be fixed
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
