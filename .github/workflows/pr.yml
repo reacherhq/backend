@@ -20,7 +20,7 @@ jobs:
   check:
     strategy:
       matrix:
-        features: ["", "bulk"]
+        features: ["", "--features bulk"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -37,7 +37,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features ${{ matrix.features }}
+          args: ${{ matrix.features }}
 
   # Cargo test.
   test:
@@ -64,7 +64,7 @@ jobs:
   lints:
     strategy:
       matrix:
-        features: ["", "bulk"]
+        features: ["", "--features bulk"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -88,4 +88,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --features ${{ matrix.features }} -- -D warnings
+          args: ${{ matrix.features }} -- -D warnings
