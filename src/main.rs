@@ -14,15 +14,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use reacher_backend::{
-	routes::{bulk::post::email_verification_task, create_routes},
-	sentry_util::{setup_sentry, CARGO_PKG_VERSION},
-};
-
+#[cfg(feature = "bulk")]
 use dotenv::dotenv;
+#[cfg(not(feature = "bulk"))]
+use reacher_backend::routes::create_routes;
+#[cfg(feature = "bulk")]
+use reacher_backend::routes::{bulk::post::email_verification_task, create_routes};
+use reacher_backend::sentry_util::{setup_sentry, CARGO_PKG_VERSION};
+#[cfg(feature = "bulk")]
 use sqlx::postgres::PgPoolOptions;
+#[cfg(feature = "bulk")]
 use sqlxmq::JobRegistry;
 use std::{env, net::IpAddr};
+use warp::Filter;
 
 /// Run a HTTP server using warp.
 ///
@@ -36,9 +40,37 @@ use std::{env, net::IpAddr};
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	log::info!(target: "reacher", "Running Reacher v{}", CARGO_PKG_VERSION);
 
+	let routes = create_db_and_routes().await?;
+
+	env_logger::init();
+
+	// Setup warp server
+	let _guard = setup_sentry();
+
+	let host = env::var("RCH_HTTP_HOST")
+		.unwrap_or_else(|_| "127.0.0.1".into())
+		.parse::<IpAddr>()
+		.expect("Environment variable RCH_HTTP_HOST is malformed.");
+	let port = env::var("PORT")
+		.map(|port| {
+			port.parse::<u16>()
+				.expect("Environment variable PORT is malformed.")
+		})
+		.unwrap_or(8080);
+	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
+
+	warp::serve(routes).run((host, port)).await;
+	Ok(())
+}
+
+/// Create a DB pool and all the API routes (including bulk).
+#[cfg(feature = "bulk")]
+pub async fn create_db_and_routes() -> Result<
+	impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone,
+	Box<dyn std::error::Error + Send + Sync>,
+> {
 	// Read from .env file if present.
 	let _ = dotenv();
-	env_logger::init();
 
 	let pg_conn =
 		env::var("DATABASE_URL").expect("Environment variable DATABASE_URL should be set");
@@ -81,23 +113,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.run()
 		.await?;
 
-	// Setup warp server
-	let _guard = setup_sentry();
+	Ok(create_routes(pool))
+}
 
-	let routes = create_routes(pool);
-
-	let host = env::var("RCH_HTTP_HOST")
-		.unwrap_or_else(|_| "127.0.0.1".into())
-		.parse::<IpAddr>()
-		.expect("Environment variable RCH_HTTP_HOST is malformed.");
-	let port = env::var("PORT")
-		.map(|port| {
-			port.parse::<u16>()
-				.expect("Environment variable PORT is malformed.")
-		})
-		.unwrap_or(8080);
-	log::info!(target: "reacher", "Server is listening on {}:{}.", host, port);
-
-	warp::serve(routes).run((host, port)).await;
-	Ok(())
+/// Only create the single check email API route, don't create any DB.
+#[cfg(not(feature = "bulk"))]
+pub async fn create_db_and_routes() -> Result<
+	impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone,
+	Box<dyn std::error::Error + Send + Sync>,
+> {
+	Ok(create_routes())
 }
