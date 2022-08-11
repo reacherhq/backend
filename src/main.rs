@@ -38,8 +38,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 	// Read from .env file if present.
 	let _ = dotenv();
-
 	env_logger::init();
+
 	let pg_conn =
 		env::var("DATABASE_URL").expect("Environment variable DATABASE_URL should be set");
 	let pg_max_conn = env::var("RCH_DATABASE_MAX_CONNECTIONS").map_or(5, |var| {
@@ -62,6 +62,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		.max_connections(pg_max_conn)
 		.connect(pg_conn.as_str())
 		.await?;
+
+	sqlx::migrate!("./migrations").run(&pool).await?;
 
 	// registry needs to be given list of jobs it can accept
 	let registry = JobRegistry::new(&[email_verification_task]);
