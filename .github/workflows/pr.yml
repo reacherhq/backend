@@ -18,6 +18,9 @@ env:
 jobs:
   # Cargo check.
   check:
+    strategy:
+      matrix:
+        features: ["", "--features bulk"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -34,10 +37,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
+          args: ${{ matrix.features }}
 
   # Cargo test.
   test:
-    if: false # skip job until tests can be fixed
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -58,6 +61,9 @@ jobs:
 
   # Cargo fmt and clippy.
   lints:
+    strategy:
+      matrix:
+        features: ["", "--features bulk"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -81,4 +87,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings
+          args: ${{ matrix.features }} -- -D warnings
