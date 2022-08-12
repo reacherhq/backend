@@ -111,7 +111,7 @@ async fn create_job_registry(pool: &Pool<Postgres>) -> Result<OwnedHandle, sqlx:
 	// with this job registry
 	let registry = registry
 		// Create a job runner using the connection pool.
-		.runner(&pool)
+		.runner(pool)
 		// Here is where you can configure the job runner
 		// Aim to keep 10-20 jobs running at a time.
 		.set_concurrency(min_task_conc, max_conc_task_fetch)
