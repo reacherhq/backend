@@ -212,6 +212,46 @@ async fn job_result(
 	conn_pool: Pool<Postgres>,
 	// ) -> Either<Result<impl warp::Reply, warp::Rejection>, Result<impl warp::Reply, warp::Rejection>> {
 ) -> Result<impl warp::Reply, warp::Rejection> {
+	// Throw an error if the job is still running.
+	// Is there a way to combine these 2 requests in one?
+	let total_records = sqlx::query!(
+		r#"SELECT total_records FROM bulk_jobs WHERE id = $1;"#,
+		job_id
+	)
+	.fetch_one(&conn_pool)
+	.await
+	.map_err(|e| {
+		log::error!(
+			target: "reacher",
+			"Failed to fetch total_records for [job_id={}] with [error={}]",
+			job_id,
+			e
+		);
+		BulkError::from(e)
+	})?
+	.total_records;
+	let total_processed = sqlx::query!(
+		r#"SELECT COUNT(*) FROM email_results WHERE job_id = $1;"#,
+		job_id
+	)
+	.fetch_one(&conn_pool)
+	.await
+	.map_err(|e| {
+		log::error!(
+			target: "reacher",
+			"Failed to get total_processed for [job_id={}] with [error={}]",
+			job_id,
+			e
+		);
+		BulkError::from(e)
+	})?
+	.count
+	.unwrap_or(0);
+
+	if total_processed < total_records as i64 {
+		return Err(BulkError::JobInProgress.into());
+	}
+
 	let format = req.format.unwrap_or(JobResultResponseFormat::Json);
 	match format {
 		JobResultResponseFormat::Json => {
@@ -226,7 +266,7 @@ async fn job_result(
 			let reply =
 				serde_json::to_vec(&JobResultJsonResponse { results: data }).map_err(|e| {
 					log::error!(
-						target:"reacher",
+						target: "reacher",
 						"Failed to convert json results to string for [job_id={}] with [error={}]",
 						job_id,
 						e
@@ -278,7 +318,7 @@ async fn job_result_json(
 		.await
 		.map_err(|e| {
 			log::error!(
-				target:"reacher",
+				target: "reacher",
 				"Failed to get results for [job_id={}] [limit={}] [offset={}] with [error={}]",
 				job_id,
 				limit,
@@ -320,7 +360,7 @@ async fn job_result_csv(
 		.await
 		.map_err(|e| {
 			log::error!(
-				target:"reacher",
+				target: "reacher",
 				"Failed to get results for [job_id={}] with [error={}]",
 				job_id,
 				e
@@ -333,7 +373,7 @@ async fn job_result_csv(
 	{
 		let result_csv: JobResultCsvResponse = CsvWrapper(json_value).try_into().map_err(|e| {
 			log::error!(
-				target:"reacher",
+				target: "reacher",
 				"Failed to convert json to csv output struct for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
 				job_id,
 				limit,
@@ -345,7 +385,7 @@ async fn job_result_csv(
 		})?;
 		wtr.serialize(result_csv).map_err(|e| {
 			log::error!(
-				target:"reacher",
+				target: "reacher",
 				"Failed to serialize result for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
 				job_id,
 				limit,
@@ -359,7 +399,7 @@ async fn job_result_csv(
 
 	let data = wtr.into_inner().map_err(|e| {
 		log::error!(
-			target:"reacher",
+			target: "reacher",
 			"Failed to convert results for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
 			job_id,
 			limit,
@@ -376,7 +416,7 @@ async fn job_result_csv(
 pub fn get_bulk_job_result(
 	conn_pool: Pool<Postgres>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-	warp::path!("v0" / "bulk" / i32 / "result")
+	warp::path!("v0" / "bulk" / i32 / "results")
 		.and(warp::get())
 		.and(warp::query::<JobResultRequest>())
 		.and_then(move |job_id, req| job_result(job_id, req, conn_pool.clone()))

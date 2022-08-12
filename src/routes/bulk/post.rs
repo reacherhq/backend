@@ -38,7 +38,7 @@ const EMAIL_TASK_BATCH_SIZE: usize = 1;
 struct TaskInput {
 	// fields for CheckEmailInput
 	to_emails: Vec<String>, // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
-	smtp_ports: Vec<u16>,   // override empty smtp ports from request with default value
+	smtp_ports: Vec<u16>,   // which ports to try for all emails
 	proxy: Option<CheckEmailInputProxy>,
 	hello_name: Option<String>,
 	from_email: Option<String>,
@@ -169,7 +169,7 @@ pub async fn email_verification_task(
 
 	for check_email_input in task_input {
 		log::debug!(
-			target:"reacher",
+			target: "reacher",
 			"Starting task [email={}] for [job_id={}] and [uuid={}]",
 			check_email_input.to_emails[0],
 			job_id,
@@ -179,7 +179,7 @@ pub async fn email_verification_task(
 		let response = check_email(&check_email_input).await;
 
 		log::debug!(
-			target:"reacher",
+			target: "reacher",
 			"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
 			check_email_input.to_emails[0],
 			job_id,
@@ -222,7 +222,7 @@ pub async fn email_verification_task(
 		.await
 		.map_err(|e| {
 			log::error!(
-				target:"reacher",
+				target: "reacher",
 				"Failed to write [email={}] result to db for [job_id={}] and [uuid={}] with [error={}]",
 				response.input,
 				job_id,
@@ -234,7 +234,7 @@ pub async fn email_verification_task(
 		})?;
 
 		log::debug!(
-			target:"reacher",
+			target: "reacher",
 			"Wrote result for [email={}] for [job_id={}] and [uuid={}]",
 			response.input,
 			job_id,
@@ -268,7 +268,7 @@ async fn create_bulk_request(
 	.await
 	.map_err(|e| {
 		log::error!(
-			target:"reacher",
+			target: "reacher",
 			"Failed to create job record for [body={:?}] with [error={}]",
 			&body,
 			e
@@ -282,7 +282,7 @@ async fn create_bulk_request(
 			.set_json(&(rec.id, &task_input))
 			.map_err(|e| {
 				log::error!(
-					target:"reacher",
+					target: "reacher",
 					"Failed to send task queue the following [input={:?}] with [error={}]",
 					&task_input,
 					e
@@ -294,7 +294,7 @@ async fn create_bulk_request(
 			.await
 			.map_err(|e| {
 				log::error!(
-					target:"reacher",
+					target: "reacher",
 					"Failed to submit task for [job={}] with [error={}]",
 					rec.id,
 					e
@@ -304,7 +304,7 @@ async fn create_bulk_request(
 			})?;
 
 		log::debug!(
-			target:"reacher",
+			target: "reacher",
 			"Submitted task to sqlxmq for [job={}] with [uuid={}]",
 			rec.id,
 			task_uuid

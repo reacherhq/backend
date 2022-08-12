@@ -4,6 +4,7 @@ use warp::reject;
 #[derive(Debug)]
 pub enum BulkError {
 	EmptyInput,
+	JobInProgress,
 	Db(sqlx::Error),
 	Csv,
 	Json,
