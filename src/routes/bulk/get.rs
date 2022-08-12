@@ -163,7 +163,7 @@ pub fn get_bulk_job_status(
 	warp::path!("v0" / "bulk" / i32)
 		.and(warp::get())
 		.and(with_db(o))
-		.and_then(move |job_id: i32, conn_pool: Pool<Postgres>| job_status(job_id, conn_pool))
+		.and_then(job_status)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

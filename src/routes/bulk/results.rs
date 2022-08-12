@@ -229,8 +229,8 @@ impl TryFrom<CsvWrapper> for JobResultCsvResponse {
 
 async fn job_result(
 	job_id: i32,
-	req: JobResultRequest,
 	conn_pool: Pool<Postgres>,
+	req: JobResultRequest,
 ) -> Result<impl warp::Reply, warp::Rejection> {
 	// Throw an error if the job is still running.
 	// Is there a way to combine these 2 requests in one?
@@ -440,7 +440,7 @@ pub fn get_bulk_job_result(
 		.and(warp::get())
 		.and(with_db(o))
 		.and(warp::query::<JobResultRequest>())
-		.and_then(move |job_id, conn_pool: Pool<Postgres>, req| job_result(job_id, req, conn_pool))
+		.and_then(job_result)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

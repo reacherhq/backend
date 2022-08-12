@@ -96,8 +96,8 @@ struct CreateBulkResponseBody {
 
 /// handles input, creates db entry for job and tasks for verification
 async fn create_bulk_request(
-	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
+	body: CreateBulkRequestBody,
 ) -> Result<impl warp::Reply, warp::Rejection> {
 	if body.input.is_empty() {
 		return Err(BulkError::EmptyInput.into());
@@ -154,11 +154,7 @@ pub fn create_bulk_job(
 		// TODO: Configure max size limit for a bulk job
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
-		.and_then(
-			move |conn_pool: Pool<Postgres>, body: CreateBulkRequestBody| {
-				create_bulk_request(body, conn_pool)
-			},
-		)
+		.and_then(create_bulk_request)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

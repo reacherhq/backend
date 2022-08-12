@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	// Setup sentry bug tracking.
 	let _guard = setup_sentry();
 
-	let is_bulk_enabled = env::var("RCH_ENABLE_BULK").unwrap_or("0".into()) == "1";
+	let is_bulk_enabled = env::var("RCH_ENABLE_BULK").unwrap_or_else(|_| "0".into()) == "1";
 	if is_bulk_enabled {
 		log::info!(target: "reacher", "Bulk endpoints enabled.");
 		let pool = create_db().await?;
