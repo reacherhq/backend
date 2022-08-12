@@ -26,13 +26,13 @@ use sqlx::{Pool, Postgres};
 use std::cmp::min;
 use warp::Filter;
 
-// this configures the number of emails passed to every job
+// this configures the number of emails passed to every task
 // this can be configured but will require changes in the
-// in the `crate::check::check_email` function which assumes a job can have
+// in the `crate::check::check_email` function which assumes a task can have
 // only one email. This will also require changing the
 // email_verification_task itself to handle multiple
 // outputs and commit them to the database.
-const EMAIL_JOB_BATCH_SIZE: usize = 1;
+const EMAIL_TASK_BATCH_SIZE: usize = 1;
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -59,7 +59,7 @@ impl IntoIterator for CreateBulkRequestBody {
 		CreateBulkRequestBodyIterator {
 			body: self,
 			index: 0,
-			batch_size: EMAIL_JOB_BATCH_SIZE,
+			batch_size: EMAIL_TASK_BATCH_SIZE,
 		}
 	}
 }
@@ -123,14 +123,14 @@ async fn create_bulk_request(
 		BulkError::from(e)
 	})?;
 
-	for job_input in body.into_iter() {
-		let job_uuid = submit_job(&conn_pool, rec.id, job_input).await?;
+	for task_input in body.into_iter() {
+		let task_uuid = submit_job(&conn_pool, rec.id, task_input).await?;
 
 		log::debug!(
 			target: "reacher",
-			"Submitted task to sqlxmq for [job_id={}] with [uuid={}]",
+			"Submitted task to sqlxmq for [job={}] with [uuid={}]",
 			rec.id,
-			job_uuid
+			task_uuid
 		);
 	}
 

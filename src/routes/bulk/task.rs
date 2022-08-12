@@ -28,7 +28,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TaskInput {
 	// fields for CheckEmailInput
-	pub to_emails: Vec<String>, // chunk of email from request. This always has at most `EMAIL_JOB_BATCH_SIZE` items.
+	pub to_emails: Vec<String>, // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
 	pub smtp_ports: Vec<u16>,   // override empty smtp ports from request with default value
 	pub proxy: Option<CheckEmailInputProxy>,
 	pub hello_name: Option<String>,
@@ -133,7 +133,7 @@ pub async fn submit_job(
 /// Arguments to the `#[job]` attribute allow setting default task options.
 /// This task tries to verify the given email and inserts the results
 /// into the email verification db table
-/// NOTE: if EMAIL_JOB_BATCH_SIZE is made greater than 1 this logic
+/// NOTE: if EMAIL_TASK_BATCH_SIZE is made greater than 1 this logic
 /// will have to be changed to handle a vector outputs from `check_email`.
 ///
 /// Small note about namings: what sqlxmq calls a "job", we call it a "task".
@@ -153,7 +153,7 @@ pub async fn email_verification_task(
 	for check_email_input in task_payload.input {
 		log::debug!(
 			target:"reacher",
-			"Starting task [email={}] for [job_id={}] and [uuid={}]",
+			"Starting task [email={}] for [job={}] and [uuid={}]",
 			check_email_input.to_emails[0],
 			task_payload.id,
 			current_job.id(),
@@ -163,7 +163,7 @@ pub async fn email_verification_task(
 
 		log::debug!(
 			target:"reacher",
-			"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
+			"Got task result [email={}] for [job={}] and [uuid={}] with [is_reachable={:?}]",
 			check_email_input.to_emails[0],
 			task_payload.id,
 			current_job.id(),
@@ -206,7 +206,7 @@ pub async fn email_verification_task(
 		.map_err(|e| {
 			log::error!(
 				target:"reacher",
-				"Failed to write [email={}] result to db for [job_id={}] and [uuid={}] with [error={}]",
+				"Failed to write [email={}] result to db for [job={}] and [uuid={}] with [error={}]",
 				response.input,
 				job_id,
 				current_job.id(),
@@ -218,7 +218,7 @@ pub async fn email_verification_task(
 
 		log::debug!(
 			target:"reacher",
-			"Wrote result for [email={}] for [job_id={}] and [uuid={}]",
+			"Wrote result for [email={}] for [job={}] and [uuid={}]",
 			response.input,
 			job_id,
 			current_job.id(),
