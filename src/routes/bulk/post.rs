@@ -93,7 +93,7 @@ struct CreateBulkResponseBody {
 	job_id: i32,
 }
 
-/// handles input, creates db entry for bulk_request and jobs for verification
+/// handles input, creates db entry for job and tasks for verification
 async fn create_bulk_request(
 	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
