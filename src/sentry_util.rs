@@ -58,7 +58,7 @@ fn add_backend_name(mut extra: BTreeMap<String, Value>) -> BTreeMap<String, Valu
 /// analytics purposes (I know, Sentry shouldn't be used for that...).
 /// TODO https://github.com/reacherhq/backend/issues/207
 pub fn metrics(message: String, duration: u128, domain: &str) {
-	log::info!("Sending info to Sentry: {}", message);
+	log::info!(target: "reacher", "Sending info to Sentry: {}", message);
 
 	let mut extra = BTreeMap::new();
 
@@ -79,7 +79,7 @@ pub fn metrics(message: String, duration: u128, domain: &str) {
 /// info before sending to Sentry, but removing all instances of `username`.
 pub fn error(message: String, result: Option<&str>, username: &str) {
 	let redacted_message = redact(message.as_str(), username);
-	log::debug!("Sending error to Sentry: {}", redacted_message);
+	log::debug!(target: "reacher", "Sending error to Sentry: {}", redacted_message);
 
 	let mut extra = BTreeMap::new();
 	if let Some(result) = result {
