@@ -14,11 +14,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod db;
-mod error;
-pub mod get;
-pub mod post;
-pub mod results;
-mod task;
+use sqlx::{Pool, Postgres};
+use warp::Filter;
 
-pub use task::email_verification_task;
+/// Warp filter that extracts a Pg Pool if the option is Some, or else rejects
+/// with a 404.
+pub fn with_db(
+	o: Option<Pool<Postgres>>,
+) -> impl Filter<Extract = (Pool<Postgres>,), Error = warp::Rejection> + Clone {
+	warp::any().and_then(move || {
+		let o = o.clone(); // Still not 100% sure why I need to clone here...
+		async move {
+			if let Some(conn_pool) = o {
+				Ok(conn_pool)
+			} else {
+				Err(warp::reject::not_found())
+			}
+		}
+	})
+}

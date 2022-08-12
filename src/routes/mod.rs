@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod bulk;
-mod check_email;
+pub mod check_email;
 mod version;
 
 use super::errors;

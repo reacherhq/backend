@@ -17,8 +17,8 @@
 //! This file implements the /bulk/{id}/results endpoints.
 
 use super::{
+	db::with_db,
 	error::{BulkError, CsvError},
-	task::with_db,
 };
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
@@ -440,9 +440,7 @@ pub fn get_bulk_job_result(
 		.and(warp::get())
 		.and(with_db(o))
 		.and(warp::query::<JobResultRequest>())
-		.and_then(move |job_id, conn_pool: Pool<Postgres>, req| {
-			job_result(job_id, req, conn_pool.clone())
-		})
+		.and_then(move |job_id, conn_pool: Pool<Postgres>, req| job_result(job_id, req, conn_pool))
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

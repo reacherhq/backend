@@ -17,8 +17,9 @@
 //! This file implements the `POST /bulk` endpoint.
 
 use super::{
+	db::with_db,
 	error::BulkError,
-	task::{submit_job, with_db, TaskInput},
+	task::{submit_job, TaskInput},
 };
 use check_if_email_exists::CheckEmailInputProxy;
 use serde::{Deserialize, Serialize};
@@ -155,7 +156,7 @@ pub fn create_bulk_job(
 		.and(warp::body::json())
 		.and_then(
 			move |conn_pool: Pool<Postgres>, body: CreateBulkRequestBody| {
-				create_bulk_request(body, conn_pool.clone())
+				create_bulk_request(body, conn_pool)
 			},
 		)
 		// View access logs by setting `RUST_LOG=reacher`.
