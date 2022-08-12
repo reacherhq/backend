@@ -107,7 +107,7 @@ pub async fn submit_job(
 		.map_err(|e| {
 			log::error!(
 				target: "reacher",
-				"Failed to submit job with the following [input={:?}] with [error={}]",
+				"Failed to submit task with the following [input={:?}] with [error={}]",
 				task_payload.input,
 				e
 			);
@@ -119,7 +119,7 @@ pub async fn submit_job(
 		.map_err(|e| {
 			log::error!(
 				target: "reacher",
-				"Failed to submit job for [bulk_req={}] with [error={}]",
+				"Failed to submit task for [bulk_req={}] with [error={}]",
 				job_id,
 				e
 			);
@@ -130,30 +130,32 @@ pub async fn submit_job(
 	Ok(uuid)
 }
 
-/// Arguments to the `#[job]` attribute allow setting default job options.
-/// This job tries to verify the given email and inserts the results
+/// Arguments to the `#[job]` attribute allow setting default task options.
+/// This task tries to verify the given email and inserts the results
 /// into the email verification db table
-// NOTE: if EMAIL_JOB_BATCH_SIZE is made greater than 1 this logic
-// will have to be changed to handle a vector outputs from `check_email`.
+/// NOTE: if EMAIL_JOB_BATCH_SIZE is made greater than 1 this logic
+/// will have to be changed to handle a vector outputs from `check_email`.
+///
+/// Small note about namings: what sqlxmq calls a "job", we call it a "task".
+/// We call a "job" a user bulk request, i.e. a list of "tasks".
+/// Please be careful while reading code.
 #[job]
 pub async fn email_verification_task(
 	mut current_job: CurrentJob,
 	// Additional arguments are optional, but can be used to access context
 	// provided via [`JobRegistry::set_context`].
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-	let job_payload: TaskPayload = current_job
-		.json()?
-		.ok_or("Malformed job with no job arguments given.")?;
-	let job_id = job_payload.id;
+	let task_payload: TaskPayload = current_job.json()?.ok_or("Got empty task.")?;
+	let job_id = task_payload.id;
 
 	let mut final_response: Option<CheckEmailOutput> = None;
 
-	for check_email_input in job_payload.input {
+	for check_email_input in task_payload.input {
 		log::debug!(
 			target:"reacher",
-			"Starting job [email={}] for [job_id={}] and [uuid={}]",
+			"Starting task [email={}] for [job_id={}] and [uuid={}]",
 			check_email_input.to_emails[0],
-			job_payload.id,
+			task_payload.id,
 			current_job.id(),
 		);
 
@@ -161,9 +163,9 @@ pub async fn email_verification_task(
 
 		log::debug!(
 			target:"reacher",
-			"Got job result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
+			"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
 			check_email_input.to_emails[0],
-			job_payload.id,
+			task_payload.id,
 			current_job.id(),
 			response.is_reachable,
 		);

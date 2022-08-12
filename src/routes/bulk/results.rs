@@ -16,7 +16,7 @@
 
 //! This file implements the /bulk/{id}/results endpoints.
 
-use super::error::BulkError;
+use super::error::{BulkError, CsvError};
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Pool, Postgres, Row};
@@ -389,7 +389,7 @@ async fn job_result_csv(
 		.iter()
 		.map(|row| row.get("result"))
 	{
-		let result_csv: JobResultCsvResponse = CsvWrapper(json_value).try_into().map_err(|e| {
+		let result_csv: JobResultCsvResponse = CsvWrapper(json_value).try_into().map_err(|e: &'static str| {
 			log::error!(
 				target: "reacher",
 				"Failed to convert json to csv output struct for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
@@ -399,7 +399,7 @@ async fn job_result_csv(
 				e
 			);
 
-			BulkError::Csv
+			BulkError::Csv(CsvError::ParseError(e))
 		})?;
 		wtr.serialize(result_csv).map_err(|e| {
 			log::error!(
@@ -411,7 +411,7 @@ async fn job_result_csv(
 				e
 			);
 
-			BulkError::Csv
+			BulkError::Csv(CsvError::CsvLibError(e))
 		})?;
 	}
 
@@ -425,7 +425,7 @@ async fn job_result_csv(
 			e
 		);
 
-		BulkError::Csv
+		BulkError::Csv(CsvError::CsvLibWriterError(e))
 	})?;
 
 	Ok(data)

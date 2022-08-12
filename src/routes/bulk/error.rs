@@ -16,13 +16,20 @@
 
 use warp::reject;
 
+#[derive(Debug)]
+pub enum CsvError {
+	CsvLibError(csv::Error),
+	CsvLibWriterError(csv::IntoInnerError<csv::Writer<Vec<u8>>>),
+	ParseError(&'static str),
+}
+
 /// Catch all error struct for the bulk endpoints
 #[derive(Debug)]
 pub enum BulkError {
 	EmptyInput,
 	JobInProgress,
 	Db(sqlx::Error),
-	Csv,
+	Csv(CsvError),
 	Json(serde_json::Error),
 }
 
