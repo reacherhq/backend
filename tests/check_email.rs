@@ -28,7 +28,7 @@ async fn test_input_foo_bar() {
 		.path("/v0/check_email")
 		.method("POST")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar"}"#).unwrap())
-		.reply(&create_routes())
+		.reply(&create_routes(None))
 		.await;
 
 	assert_eq!(resp.status(), StatusCode::OK);
@@ -41,7 +41,7 @@ async fn test_input_foo_bar_baz() {
 		.path("/v0/check_email")
 		.method("POST")
 		.json(&serde_json::from_str::<EndpointRequest>(r#"{"to_email": "foo@bar.baz"}"#).unwrap())
-		.reply(&create_routes())
+		.reply(&create_routes(None))
 		.await;
 
 	assert_eq!(resp.status(), StatusCode::OK);
