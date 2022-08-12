@@ -1,4 +1,22 @@
-use super::error::BulkError;
+// Reacher - Email Verification
+// Copyright (C) 2018-2022 Reacher
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//! This file implements the /bulk/{id}/results endpoints.
+
+use super::error::{BulkError, CsvError};
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Pool, Postgres, Row};
@@ -223,7 +241,7 @@ async fn job_result(
 	.map_err(|e| {
 		log::error!(
 			target: "reacher",
-			"Failed to fetch total_records for [job_id={}] with [error={}]",
+			"Failed to fetch total_records for [job={}] with [error={}]",
 			job_id,
 			e
 		);
@@ -239,7 +257,7 @@ async fn job_result(
 	.map_err(|e| {
 		log::error!(
 			target: "reacher",
-			"Failed to get total_processed for [job_id={}] with [error={}]",
+			"Failed to get total_processed for [job={}] with [error={}]",
 			job_id,
 			e
 		);
@@ -267,12 +285,12 @@ async fn job_result(
 				serde_json::to_vec(&JobResultJsonResponse { results: data }).map_err(|e| {
 					log::error!(
 						target: "reacher",
-						"Failed to convert json results to string for [job_id={}] with [error={}]",
+						"Failed to convert json results to string for [job={}] with [error={}]",
 						job_id,
 						e
 					);
 
-					BulkError::Json
+					BulkError::Json(e)
 				})?;
 
 			Ok(warp::reply::with_header(
@@ -319,7 +337,7 @@ async fn job_result_json(
 		.map_err(|e| {
 			log::error!(
 				target: "reacher",
-				"Failed to get results for [job_id={}] [limit={}] [offset={}] with [error={}]",
+				"Failed to get results for [job={}] [limit={}] [offset={}] with [error={}]",
 				job_id,
 				limit,
 				offset,
@@ -361,7 +379,7 @@ async fn job_result_csv(
 		.map_err(|e| {
 			log::error!(
 				target: "reacher",
-				"Failed to get results for [job_id={}] with [error={}]",
+				"Failed to get results for [job={}] with [error={}]",
 				job_id,
 				e
 			);
@@ -371,43 +389,43 @@ async fn job_result_csv(
 		.iter()
 		.map(|row| row.get("result"))
 	{
-		let result_csv: JobResultCsvResponse = CsvWrapper(json_value).try_into().map_err(|e| {
+		let result_csv: JobResultCsvResponse = CsvWrapper(json_value).try_into().map_err(|e: &'static str| {
 			log::error!(
 				target: "reacher",
-				"Failed to convert json to csv output struct for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
+				"Failed to convert json to csv output struct for [job={}] [limit={}] [offset={}] to csv with [error={}]",
 				job_id,
 				limit,
 				offset,
 				e
 			);
 
-			BulkError::Csv
+			BulkError::Csv(CsvError::Parse(e))
 		})?;
 		wtr.serialize(result_csv).map_err(|e| {
 			log::error!(
 				target: "reacher",
-				"Failed to serialize result for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
+				"Failed to serialize result for [job={}] [limit={}] [offset={}] to csv with [error={}]",
 				job_id,
 				limit,
 				offset,
 				e
 			);
 
-			BulkError::Csv
+			BulkError::Csv(CsvError::CsvLib(e))
 		})?;
 	}
 
 	let data = wtr.into_inner().map_err(|e| {
 		log::error!(
 			target: "reacher",
-			"Failed to convert results for [job_id={}] [limit={}] [offset={}] to csv with [error={}]",
+			"Failed to convert results for [job={}] [limit={}] [offset={}] to csv with [error={}]",
 			job_id,
 			limit,
 			offset,
 			e
 		);
 
-		BulkError::Csv
+		BulkError::Csv(CsvError::CsvLibWriter(Box::new(e)))
 	})?;
 
 	Ok(data)

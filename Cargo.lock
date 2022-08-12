@@ -1674,6 +1674,7 @@ dependencies = [
  "sqlx",
  "sqlxmq",
  "tokio",
+ "uuid 1.1.2",
  "warp",
 ]
 

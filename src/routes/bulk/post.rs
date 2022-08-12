@@ -16,15 +16,15 @@
 
 //! This file implements the `POST /bulk` endpoint.
 
-use super::error::BulkError;
-use crate::check::{check_email, SMTP_TIMEOUT};
-use check_if_email_exists::{CheckEmailInput, CheckEmailInputProxy, CheckEmailOutput, Reachable};
-use sqlx::{Pool, Postgres};
-use std::{cmp::min, error::Error, time::Duration};
-use warp::Filter;
-
+use super::{
+	error::BulkError,
+	task::{submit_job, TaskInput},
+};
+use check_if_email_exists::CheckEmailInputProxy;
 use serde::{Deserialize, Serialize};
-use sqlxmq::{job, CurrentJob};
+use sqlx::{Pool, Postgres};
+use std::cmp::min;
+use warp::Filter;
 
 // this configures the number of emails passed to every task
 // this can be configured but will require changes in the
@@ -33,64 +33,6 @@ use sqlxmq::{job, CurrentJob};
 // email_verification_task itself to handle multiple
 // outputs and commit them to the database.
 const EMAIL_TASK_BATCH_SIZE: usize = 1;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-struct TaskInput {
-	// fields for CheckEmailInput
-	to_emails: Vec<String>, // chunk of email from request. This always has at most `EMAIL_TASK_BATCH_SIZE` items.
-	smtp_ports: Vec<u16>,   // which ports to try for all emails
-	proxy: Option<CheckEmailInputProxy>,
-	hello_name: Option<String>,
-	from_email: Option<String>,
-}
-
-struct TaskInputIterator {
-	body: TaskInput,
-	index: usize,
-}
-
-impl IntoIterator for TaskInput {
-	type Item = CheckEmailInput;
-	type IntoIter = TaskInputIterator;
-
-	fn into_iter(self) -> Self::IntoIter {
-		TaskInputIterator {
-			body: self,
-			index: 0,
-		}
-	}
-}
-
-impl Iterator for TaskInputIterator {
-	type Item = CheckEmailInput;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		if self.index < self.body.smtp_ports.len() {
-			let mut item = CheckEmailInput::new(self.body.to_emails.clone());
-
-			if let Some(name) = &self.body.hello_name {
-				item.set_hello_name(name.clone());
-			}
-
-			if let Some(email) = &self.body.from_email {
-				item.set_from_email(email.clone());
-			}
-
-			item.set_smtp_port(self.body.smtp_ports[self.index]);
-
-			if let Some(proxy) = &self.body.proxy {
-				item.set_proxy(proxy.clone());
-			}
-
-			item.set_smtp_timeout(Duration::from_secs(SMTP_TIMEOUT));
-
-			self.index += 1;
-			Some(item)
-		} else {
-			None
-		}
-	}
-}
 
 /// Endpoint request body.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -151,101 +93,6 @@ struct CreateBulkResponseBody {
 	job_id: i32,
 }
 
-/// Arguments to the `#[job]` attribute allow setting default job options.
-/// This task tries to verify the given email and inserts the results
-/// into the email verification db table
-// NOTE: if EMAIL_TASK_BATCH_SIZE is made greater than 1 this logic
-// will have to be changed to handle a vector outputs from `check_email`.
-#[job]
-pub async fn email_verification_task(
-	mut current_job: CurrentJob,
-	// Additional arguments are optional, but can be used to access context
-	// provided via [`JobRegistry::set_context`].
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-	let (job_id, task_input): (i32, TaskInput) = current_job
-		.json()?
-		.ok_or("Malformed task with no task arguments given.")?;
-	let mut final_response: Option<CheckEmailOutput> = None;
-
-	for check_email_input in task_input {
-		log::debug!(
-			target: "reacher",
-			"Starting task [email={}] for [job_id={}] and [uuid={}]",
-			check_email_input.to_emails[0],
-			job_id,
-			current_job.id(),
-		);
-
-		let response = check_email(&check_email_input).await;
-
-		log::debug!(
-			target: "reacher",
-			"Got task result [email={}] for [job_id={}] and [uuid={}] with [is_reachable={:?}]",
-			check_email_input.to_emails[0],
-			job_id,
-			current_job.id(),
-			response.is_reachable,
-		);
-
-		let is_reachable = response.is_reachable == Reachable::Unknown;
-		final_response = Some(response);
-		// unsuccessful validation continue iteration with next possible smtp port
-		if is_reachable {
-			continue;
-		}
-		// successful validation attempt complete task break iteration
-		else {
-			break;
-		}
-	}
-
-	// final response can only be empty if there
-	// were no validation attempts. This can can
-	// never occur currently
-	if let Some(response) = final_response {
-		// write results and terminate iteration
-		#[allow(unused_variables)]
-		let rec = sqlx::query!(
-			r#"
-			INSERT INTO email_results (job_id, result)
-			VALUES ($1, $2)
-			"#,
-			job_id,
-			serde_json::json!(response)
-		)
-		// TODO: This is a simplified solution and will work when
-		// the task queue and email results tables are in the same
-		// database. Keeping them in separate database will require
-		// some custom logic on the job registry side
-		// https://github.com/Diggsey/sqlxmq/issues/4
-		.fetch_optional(current_job.pool())
-		.await
-		.map_err(|e| {
-			log::error!(
-				target: "reacher",
-				"Failed to write [email={}] result to db for [job_id={}] and [uuid={}] with [error={}]",
-				response.input,
-				job_id,
-				current_job.id(),
-				e
-			);
-
-			e
-		})?;
-
-		log::debug!(
-			target: "reacher",
-			"Wrote result for [email={}] for [job_id={}] and [uuid={}]",
-			response.input,
-			job_id,
-			current_job.id(),
-		);
-	}
-
-	current_job.complete().await?;
-	Ok(())
-}
-
 /// handles input, creates db entry for job and tasks for verification
 async fn create_bulk_request(
 	body: CreateBulkRequestBody,
@@ -277,31 +124,7 @@ async fn create_bulk_request(
 	})?;
 
 	for task_input in body.into_iter() {
-		let task_uuid = email_verification_task
-			.builder()
-			.set_json(&(rec.id, &task_input))
-			.map_err(|e| {
-				log::error!(
-					target: "reacher",
-					"Failed to send task queue the following [input={:?}] with [error={}]",
-					&task_input,
-					e
-				);
-
-				BulkError::Json
-			})?
-			.spawn(&conn_pool)
-			.await
-			.map_err(|e| {
-				log::error!(
-					target: "reacher",
-					"Failed to submit task for [job={}] with [error={}]",
-					rec.id,
-					e
-				);
-
-				BulkError::from(e)
-			})?;
+		let task_uuid = submit_job(&conn_pool, rec.id, task_input).await?;
 
 		log::debug!(
 			target: "reacher",

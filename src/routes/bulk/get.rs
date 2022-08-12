@@ -83,7 +83,7 @@ async fn job_status(
 	.map_err(|e| {
 		log::error!(
 			target: "reacher",
-			"Failed to get job record for [job_id={}] with [error={}]",
+			"Failed to get job record for [job={}] with [error={}]",
 			job_id,
 			e
 		);
@@ -109,7 +109,7 @@ async fn job_status(
 	.map_err(|e| {
 		log::error!(
 			target: "reacher",
-			"Failed to get aggregate info for [job_id={}] with [error={}]",
+			"Failed to get aggregate info for [job={}] with [error={}]",
 			job_id,
 			e
 		);
