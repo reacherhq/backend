@@ -18,9 +18,9 @@ use warp::reject;
 
 #[derive(Debug)]
 pub enum CsvError {
-	CsvLibError(csv::Error),
-	CsvLibWriterError(csv::IntoInnerError<csv::Writer<Vec<u8>>>),
-	ParseError(&'static str),
+	CsvLib(csv::Error),
+	CsvLibWriter(Box<csv::IntoInnerError<csv::Writer<Vec<u8>>>>),
+	Parse(&'static str),
 }
 
 /// Catch all error struct for the bulk endpoints

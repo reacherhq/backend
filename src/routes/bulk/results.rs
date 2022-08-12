@@ -399,7 +399,7 @@ async fn job_result_csv(
 				e
 			);
 
-			BulkError::Csv(CsvError::ParseError(e))
+			BulkError::Csv(CsvError::Parse(e))
 		})?;
 		wtr.serialize(result_csv).map_err(|e| {
 			log::error!(
@@ -411,7 +411,7 @@ async fn job_result_csv(
 				e
 			);
 
-			BulkError::Csv(CsvError::CsvLibError(e))
+			BulkError::Csv(CsvError::CsvLib(e))
 		})?;
 	}
 
@@ -425,7 +425,7 @@ async fn job_result_csv(
 			e
 		);
 
-		BulkError::Csv(CsvError::CsvLibWriterError(e))
+		BulkError::Csv(CsvError::CsvLibWriter(Box::new(e)))
 	})?;
 
 	Ok(data)
