@@ -20,33 +20,15 @@ mod version;
 
 use super::errors;
 use sqlx::{Pool, Postgres};
-use warp::{Filter, Rejection};
+use warp::Filter;
 
 pub fn create_routes(
 	o: Option<Pool<Postgres>>,
-) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-	let is_enabled = o.is_some();
-
-	// Conditional routes that are added only if the conn_pool_option is not
-	// empty.
-	let post = with_bulk(is_enabled).and(bulk::post::create_bulk_job(o.unwrap().clone()));
-	let get = with_bulk(is_enabled).and(bulk::get::get_bulk_job_status(o.unwrap().clone()));
-	let results = with_bulk(is_enabled).and(bulk::results::get_bulk_job_result(o.unwrap()));
-
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	version::get::get_version()
 		.or(check_email::post::post_check_email())
-		.or(post)
-		.or(get)
-		.or(results)
+		.or(bulk::post::create_bulk_job(o.clone()))
+		.or(bulk::get::get_bulk_job_status(o.clone()))
+		.or(bulk::results::get_bulk_job_result(o))
 		.recover(errors::handle_rejection)
-}
-
-fn with_bulk(is_bulk_enabled: bool) -> impl Filter<Extract = ((),), Error = Rejection> + Copy {
-	warp::any().and_then(async move || {
-		if is_bulk_enabled {
-			Ok(())
-		} else {
-			Err(warp::reject::not_found())
-		}
-	})
 }

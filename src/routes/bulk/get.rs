@@ -16,7 +16,7 @@
 
 //! This file implements the `GET /bulk/{id}` endpoint.
 
-use super::error::BulkError;
+use super::{error::BulkError, task::with_db};
 use serde::Serialize;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres};
@@ -158,11 +158,14 @@ async fn job_status(
 }
 
 pub fn get_bulk_job_status(
-	conn_pool: Pool<Postgres>,
+	o: Option<Pool<Postgres>>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk" / i32)
 		.and(warp::get())
-		.and_then(move |job_id| job_status(job_id, conn_pool.clone()))
+		.and(with_db(o))
+		.and_then(move |job_id: i32, conn_pool: Pool<Postgres>| {
+			job_status(job_id, conn_pool.clone())
+		})
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

@@ -18,46 +18,32 @@
 //! functions, depending on whether the `bulk` feature is enabled or not.
 
 use dotenv::dotenv;
-#[cfg(not(feature = "bulk"))]
-use reacher_backend::routes::create_routes;
-#[cfg(feature = "bulk")]
 use reacher_backend::routes::{bulk::email_verification_task, create_routes};
 use reacher_backend::sentry_util::{setup_sentry, CARGO_PKG_VERSION};
-#[cfg(feature = "bulk")]
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
-#[cfg(feature = "bulk")]
 use sqlxmq::{JobRegistry, OwnedHandle};
 use std::{env, net::IpAddr};
 use warp::Filter;
 
 /// Run a HTTP server using warp with bulk endpoints.
 #[tokio::main]
-#[cfg(feature = "bulk")]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 	init_logger();
 
 	// Setup sentry bug tracking.
 	let _guard = setup_sentry();
 
-	let pool = create_db().await?;
-	let _registry = create_job_registry(&pool).await?;
-	let routes = create_routes(pool);
-	run_warp_server(routes).await?;
-
-	Ok(())
-}
-
-/// Run a HTTP server using warp without bulk endpoints.
-#[tokio::main]
-#[cfg(not(feature = "bulk"))]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-	init_logger();
-
-	// Setup sentry bug tracking.
-	let _guard = setup_sentry();
-
-	let routes = create_routes();
-	run_warp_server(routes).await?;
+	let is_bulk_enabled = env::var("RCH_ENABLE_BULK").unwrap_or("0".into()) == "1";
+	if is_bulk_enabled {
+		log::info!(target: "reacher", "Bulk endpoints enabled.");
+		let pool = create_db().await?;
+		let _registry = create_job_registry(&pool).await?;
+		let routes = create_routes(Some(pool));
+		run_warp_server(routes).await?;
+	} else {
+		let routes = create_routes(None);
+		run_warp_server(routes).await?;
+	}
 
 	Ok(())
 }
@@ -70,7 +56,6 @@ fn init_logger() {
 }
 
 /// Create a DB pool.
-#[cfg(feature = "bulk")]
 pub async fn create_db() -> Result<Pool<Postgres>, sqlx::Error> {
 	let pg_conn =
 		env::var("DATABASE_URL").expect("Environment variable DATABASE_URL should be set");
@@ -93,7 +78,6 @@ pub async fn create_db() -> Result<Pool<Postgres>, sqlx::Error> {
 }
 
 /// Create a job registry with one task: the email verification task.
-#[cfg(feature = "bulk")]
 async fn create_job_registry(pool: &Pool<Postgres>) -> Result<OwnedHandle, sqlx::Error> {
 	let min_task_conc = env::var("RCH_MINIMUM_TASK_CONCURRENCY").map_or(10, |var| {
 		var.parse::<usize>()

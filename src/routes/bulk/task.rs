@@ -24,6 +24,7 @@ use sqlx::{Pool, Postgres};
 use sqlxmq::{job, CurrentJob};
 use std::{error::Error, time::Duration};
 use uuid::Uuid;
+use warp::Filter;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TaskInput {
@@ -227,4 +228,19 @@ pub async fn email_verification_task(
 
 	current_job.complete().await?;
 	Ok(())
+}
+
+pub fn with_db(
+	o: Option<Pool<Postgres>>,
+) -> impl Filter<Extract = (Pool<Postgres>,), Error = warp::Rejection> + Clone {
+	warp::any().and_then(move || {
+		let a = o.clone();
+		async move {
+			if let Some(conn_pool) = a {
+				Ok(conn_pool.clone())
+			} else {
+				Err(warp::reject::not_found())
+			}
+		}
+	})
 }
