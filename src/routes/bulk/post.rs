@@ -144,7 +144,7 @@ async fn create_bulk_request(
 /// a new job to check them.
 pub fn create_bulk_job(
 	conn_pool: Pool<Postgres>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk")
 		.and(warp::post())
 		// When accepting a body, we want a JSON body (and to reject huge

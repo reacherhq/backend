@@ -27,7 +27,8 @@ struct EndpointVersion {
 }
 
 /// Create the `GET /version` endpoint.
-pub fn get_version() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn get_version() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone
+{
 	warp::path("version").and(warp::get()).map(|| {
 		warp::reply::json(&EndpointVersion {
 			version: CARGO_PKG_VERSION.into(),

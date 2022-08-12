@@ -159,7 +159,7 @@ async fn job_status(
 
 pub fn get_bulk_job_status(
 	conn_pool: Pool<Postgres>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk" / i32)
 		.and(warp::get())
 		.and_then(move |job_id| job_status(job_id, conn_pool.clone()))

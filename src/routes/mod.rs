@@ -14,31 +14,39 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[cfg(feature = "bulk")]
 pub mod bulk;
-pub mod check_email;
-pub mod version;
+mod check_email;
+mod version;
 
 use super::errors;
-#[cfg(feature = "bulk")]
 use sqlx::{Pool, Postgres};
-use warp::Filter;
+use warp::{Filter, Rejection};
 
-#[cfg(feature = "bulk")]
 pub fn create_routes(
-	conn_pool: Pool<Postgres>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	o: Option<Pool<Postgres>>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+	let is_enabled = o.is_some();
+
+	// Conditional routes that are added only if the conn_pool_option is not
+	// empty.
+	let post = with_bulk(is_enabled).and(bulk::post::create_bulk_job(o.unwrap().clone()));
+	let get = with_bulk(is_enabled).and(bulk::get::get_bulk_job_status(o.unwrap().clone()));
+	let results = with_bulk(is_enabled).and(bulk::results::get_bulk_job_result(o.unwrap()));
+
 	version::get::get_version()
 		.or(check_email::post::post_check_email())
-		.or(bulk::post::create_bulk_job(conn_pool.clone()))
-		.or(bulk::get::get_bulk_job_status(conn_pool.clone()))
-		.or(bulk::results::get_bulk_job_result(conn_pool))
+		.or(post)
+		.or(get)
+		.or(results)
 		.recover(errors::handle_rejection)
 }
 
-#[cfg(not(feature = "bulk"))]
-pub fn create_routes() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-	version::get::get_version()
-		.or(check_email::post::post_check_email())
-		.recover(errors::handle_rejection)
+fn with_bulk(is_bulk_enabled: bool) -> impl Filter<Extract = ((),), Error = Rejection> + Copy {
+	warp::any().and_then(async move || {
+		if is_bulk_enabled {
+			Ok(())
+		} else {
+			Err(warp::reject::not_found())
+		}
+	})
 }
