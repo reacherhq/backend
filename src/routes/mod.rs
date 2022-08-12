@@ -32,7 +32,7 @@ pub fn create_routes(
 		.or(check_email::post::post_check_email())
 		.or(bulk::post::create_bulk_job(conn_pool.clone()))
 		.or(bulk::get::get_bulk_job_status(conn_pool.clone()))
-		.or(bulk::download::get_bulk_job_result(conn_pool))
+		.or(bulk::results::get_bulk_job_result(conn_pool))
 		.recover(errors::handle_rejection)
 }
 

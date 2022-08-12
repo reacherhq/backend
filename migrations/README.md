@@ -22,7 +22,7 @@ The following migration files have been copied from the [sqlxmq repo](https://gi
 
 The following migrations are specific to Reacher:
 
-- `20220117025847_email_data.down.sql`: set up the `bulk_jobs` and `email_result` tables
+- `20220117025847_email_data.down.sql`: set up the `bulk_jobs` and `email_results` tables
 - `20220810141100_result_created_at.down.sql`: add a `created_at` column  on `email_result`
 
 ## Advanced Usage

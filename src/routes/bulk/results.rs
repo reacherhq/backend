@@ -233,7 +233,7 @@ async fn job_result(
 	// Throw an error if the job is still running.
 	// Is there a way to combine these 2 requests in one?
 	let total_records = sqlx::query!(
-		r#"SELECT total_records FROM bulk_requests WHERE id = $1;"#,
+		r#"SELECT total_records FROM bulk_jobs WHERE id = $1;"#,
 		job_id
 	)
 	.fetch_one(&conn_pool)
@@ -241,7 +241,7 @@ async fn job_result(
 	.map_err(|e| {
 		log::error!(
 			target: "reacher",
-			"Failed to fetch total_records for [bulk_req_id={}] with [error={}]",
+			"Failed to fetch total_records for [job_id={}] with [error={}]",
 			job_id,
 			e
 		);
@@ -249,7 +249,7 @@ async fn job_result(
 	})?
 	.total_records;
 	let total_processed = sqlx::query!(
-		r#"SELECT COUNT(*) FROM email_results WHERE bulk_req_id = $1;"#,
+		r#"SELECT COUNT(*) FROM email_results WHERE job_id = $1;"#,
 		job_id
 	)
 	.fetch_one(&conn_pool)
@@ -322,7 +322,7 @@ async fn job_result_json(
 	let query = sqlx::query!(
 		r#"
 		SELECT result FROM email_results
-		WHERE bulk_req_id = $1
+		WHERE job_id = $1
 		ORDER BY id
 		LIMIT $2 OFFSET $3
 		"#,
@@ -362,7 +362,7 @@ async fn job_result_csv(
 	let query = sqlx::query!(
 		r#"
 		SELECT result FROM email_results
-		WHERE bulk_req_id = $1
+		WHERE job_id = $1
 		ORDER BY id
 		LIMIT $2 OFFSET $3
 		"#,

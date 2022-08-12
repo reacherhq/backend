@@ -21,7 +21,7 @@ use dotenv::dotenv;
 #[cfg(not(feature = "bulk"))]
 use reacher_backend::routes::create_routes;
 #[cfg(feature = "bulk")]
-use reacher_backend::routes::{bulk::post::email_verification_task, create_routes};
+use reacher_backend::routes::{bulk::email_verification_task, create_routes};
 use reacher_backend::sentry_util::{setup_sentry, CARGO_PKG_VERSION};
 #[cfg(feature = "bulk")]
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
