@@ -65,7 +65,7 @@ These are the environment variables used to configure the HTTP server:
 
 | Env Var                             | Required?                   | Description                                                                                               | Default            |
 | ----------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------ |
-| `RCH_ENABLE_BULK`                   | No                          | If set to 1, then bulk endpoints will be added to the backend.                                            | 0                  |
+| `RCH_ENABLE_BULK`                   | No                          | If set to 1, then bulk verification endpoints will be added to the backend.                               | 0                  |
 | `DATABASE_URL`                      | Yes if `RCH_ENABLE_BULK==1` | Database connection string for storing results and task queue                                             | not defined        |
 | `RCH_HTTP_HOST`                     | No                          | The host name to bind the HTTP server to.                                                                 | `127.0.0.1`        |
 | `PORT`                              | No                          | The port to bind the HTTP server to, often populated by the cloud provider.                               | `8080`             |

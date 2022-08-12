@@ -44,6 +44,8 @@ USER reacher
 ENV RUST_LOG=reacher=info
 ENV RCH_HTTP_HOST=0.0.0.0
 ENV PORT=8080
+# Bulk verification is disabled by default. Set to 1 to enable it.
+ENV RCH_ENABLE_BULK=0
 
 EXPOSE 8080
 

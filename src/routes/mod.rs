@@ -27,6 +27,7 @@ pub fn create_routes(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
 	version::get::get_version()
 		.or(check_email::post::post_check_email())
+		// The 3 following routes will 404 if o is None.
 		.or(bulk::post::create_bulk_job(o.clone()))
 		.or(bulk::get::get_bulk_job_status(o.clone()))
 		.or(bulk::results::get_bulk_job_result(o))
