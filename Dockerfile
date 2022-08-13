@@ -13,15 +13,8 @@ RUN rm -f target/x86_64-unknown-linux-musl/release/deps/reacher*
 COPY . .
 
 ENV SQLX_OFFLINE=true
-# To enable bulk endpoints, run with `--build-arg enable_bulk=1`.
-ARG enable_bulk=0
 
-RUN if [ "${enable_bulk}" = "1" ]; \
-    then \
-        cargo build --release --target=x86_64-unknown-linux-musl --features bulk; \
-    else \
-        cargo build --release --target=x86_64-unknown-linux-musl; \
-    fi;
+RUN cargo build --release --target=x86_64-unknown-linux-musl
 
 # ------------------------------------------------------------------------------
 # Final Stage
