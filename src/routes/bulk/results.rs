@@ -16,7 +16,10 @@
 
 //! This file implements the /bulk/{id}/results endpoints.
 
-use super::error::{BulkError, CsvError};
+use super::{
+	db::with_db,
+	error::{BulkError, CsvError},
+};
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Pool, Postgres, Row};
@@ -226,9 +229,8 @@ impl TryFrom<CsvWrapper> for JobResultCsvResponse {
 
 async fn job_result(
 	job_id: i32,
-	req: JobResultRequest,
 	conn_pool: Pool<Postgres>,
-	// ) -> Either<Result<impl warp::Reply, warp::Rejection>, Result<impl warp::Reply, warp::Rejection>> {
+	req: JobResultRequest,
 ) -> Result<impl warp::Reply, warp::Rejection> {
 	// Throw an error if the job is still running.
 	// Is there a way to combine these 2 requests in one?
@@ -432,12 +434,13 @@ async fn job_result_csv(
 }
 
 pub fn get_bulk_job_result(
-	conn_pool: Pool<Postgres>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	o: Option<Pool<Postgres>>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk" / i32 / "results")
 		.and(warp::get())
+		.and(with_db(o))
 		.and(warp::query::<JobResultRequest>())
-		.and_then(move |job_id, req| job_result(job_id, req, conn_pool.clone()))
+		.and_then(job_result)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }

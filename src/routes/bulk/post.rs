@@ -17,6 +17,7 @@
 //! This file implements the `POST /bulk` endpoint.
 
 use super::{
+	db::with_db,
 	error::BulkError,
 	task::{submit_job, TaskInput},
 };
@@ -95,8 +96,8 @@ struct CreateBulkResponseBody {
 
 /// handles input, creates db entry for job and tasks for verification
 async fn create_bulk_request(
-	body: CreateBulkRequestBody,
 	conn_pool: Pool<Postgres>,
+	body: CreateBulkRequestBody,
 ) -> Result<impl warp::Reply, warp::Rejection> {
 	if body.input.is_empty() {
 		return Err(BulkError::EmptyInput.into());
@@ -143,16 +144,17 @@ async fn create_bulk_request(
 /// The endpoint accepts list of email address and creates
 /// a new job to check them.
 pub fn create_bulk_job(
-	conn_pool: Pool<Postgres>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+	o: Option<Pool<Postgres>>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
 	warp::path!("v0" / "bulk")
 		.and(warp::post())
+		.and(with_db(o))
 		// When accepting a body, we want a JSON body (and to reject huge
 		// payloads)...
 		// TODO: Configure max size limit for a bulk job
 		.and(warp::body::content_length_limit(1024 * 16))
 		.and(warp::body::json())
-		.and_then(move |body: CreateBulkRequestBody| create_bulk_request(body, conn_pool.clone()))
+		.and_then(create_bulk_request)
 		// View access logs by setting `RUST_LOG=reacher`.
 		.with(warp::log("reacher"))
 }
