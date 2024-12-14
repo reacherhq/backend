@@ -198,6 +198,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-smtp"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ee04bcf0a7ebf5594f9aff84935dc8cb0490b65055913a7a4c4d08f81e181d6"
+dependencies = [
+ "anyhow",
+ "base64",
+ "futures",
+ "log",
+ "nom",
+ "pin-project",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "async-std"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -419,7 +435,7 @@ checksum = "bcefe39f6af22e8a556e3b64aefca5d58e7ed98a2e0848990f23e9b801a86a35"
 dependencies = [
  "async-native-tls",
  "async-recursion",
- "async-smtp",
+ "async-smtp 0.5.0",
  "async-std",
  "async-std-resolver",
  "futures",
@@ -1661,7 +1677,7 @@ dependencies = [
 name = "reacher_backend"
 version = "0.4.0"
 dependencies = [
- "async-smtp",
+ "async-smtp 0.10.0",
  "check-if-email-exists",
  "csv",
  "dotenv",
